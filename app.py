@@ -5,10 +5,12 @@ from forms import LoginForm
 from datetime import datetime,timedelta
 from models import db, User, LeaveRecord
 from sqlalchemy.exc import IntegrityError,SQLAlchemyError 
+from flask_migrate import Migrate
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.service_account import Credentials
 import os
+
 
 # 授權和初始化 Google Drive API
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
@@ -54,7 +56,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'  # 替換為更安全的密鑰
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:26322655@localhost/leave_system'  # 替換為你的 MySQL 資料庫連接
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
+# Import models here
+import models
 # 初始化資料庫
 db.init_app(app)
 
