@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>請假系統</title>
+    <style>
+        .flash-message.danger {
+            color: red;
+            font-weight: bold;
+        }
+        .flash-message.success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        // 當表單提交時檢查是否需要上傳收據
+        function validateForm(event) {
+            const leaveType = document.getElementById("leave_type").value;
+            const receipt = document.getElementById("receipt").files.length;
+
+            if (leaveType === "病假" && receipt === 0) {
+                alert("請上傳收據，病假必須附上收據！");
+                event.preventDefault(); // 阻止表單提交
+            }
+        }
+
+        // 切換類型時顯示提示
+        function toggleReceiptRequirement() {
+            const leaveType = document.getElementById("leave_type").value;
+            const receiptLabel = document.getElementById("receipt-label");
+
+            if (leaveType === "病假") {
+                receiptLabel.style.color = "red";
+                receiptLabel.textContent = "上傳收據 (病假必填):";
+            } else {
+                receiptLabel.style.color = "black";
+                receiptLabel.textContent = "上傳收據:";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>請假系統</h1>
+     <!-- 在頁面頂部顯示錯誤或成功訊息 -->
+     {% with messages = get_flashed_messages(with_categories=True) %}
+     {% if messages %}
+         <div>
+             {% for category, message in messages %}
+                 <div class="flash-message {{ danger }}">
+                     {{ message }}
+                 </div>
+             {% endfor %}
+         </div>
+     {% endif %}
+ {% endwith %}
+    <!-- 表單提交至 /leave -->
+    <form action="/leave" method="POST" enctype="multipart/form-data" onsubmit="validateForm(event)">
+        <label for="start_date">開始日期:</label><br>
+        <input type="date" id="start_date" name="start_date" required>
+        <br><br>
+
+        <label for="end_date">結束日期:</label><br>
+        <input type="date" id="end_date" name="end_date" required>
+        <br><br>
+
+        <label for="leave_type">請假類型:</label><br>
+        <select id="leave_type" name="leave_type" required onchange="toggleReceiptRequirement()">
+            <option value="病假">病假</option>
+            <option value="特休">特休</option>
+        </select>
+        <br><br>
+
+        <label for="half_day">半天:</label>
+        <input type="checkbox" id="half_day" name="half_day">
+        <br><br>
+
+        <label for="reason">請假原因:</label><br>
+        <textarea id="reason" name="reason" rows="4" cols="50"></textarea>
+        <br><br>
+
+        <!-- 文件上傳 -->
+        <label id="receipt-label" for="receipt">上傳收據:</label><br>
+        <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf">
+        <br><br>
+        
+        <button type="submit">提交</button>
+    </form>
+
+    <a href="/base">前往我的頁面</a>
+    <p>
+        <a href="{{ url_for('logout') }}">登出</a>
+    </p>
+</body>
+</html>
