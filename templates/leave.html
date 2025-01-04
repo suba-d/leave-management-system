@@ -4,18 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>請假系統</title>
-    <style>
-        .flash-message.danger {
-            color: red;
-            font-weight: bold;
-        }
-        .flash-message.success {
-            color: green;
-            font-weight: bold;
-        }
-    </style>
     <script>
-        // 當表單提交時檢查是否需要上傳收據
+        // 驗證表單提交
         function validateForm(event) {
             const leaveType = document.getElementById("leave_type").value;
             const receipt = document.getElementById("receipt").files.length;
@@ -30,67 +20,132 @@
         function toggleReceiptRequirement() {
             const leaveType = document.getElementById("leave_type").value;
             const receiptLabel = document.getElementById("receipt-label");
+            const receiptInput = document.getElementById("receipt");
 
             if (leaveType === "病假") {
                 receiptLabel.style.color = "red";
                 receiptLabel.textContent = "上傳收據 (病假必填):";
+                receiptInput.required = true;
             } else {
                 receiptLabel.style.color = "black";
                 receiptLabel.textContent = "上傳收據:";
+                receiptInput.required = false;
             }
         }
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center; /* 水平置中 */
+            align-items: center;    /* 垂直置中 */
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        input, select, textarea, button {
+            margin-top: 5px;
+            margin-bottom: 15px;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .link a {
+            text-decoration: none;
+            color: #4CAF50;
+        }
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>請假系統</h1>
-     <!-- 在頁面頂部顯示錯誤或成功訊息 -->
-     {% with messages = get_flashed_messages(with_categories=True) %}
-     {% if messages %}
-         <div>
-             {% for category, message in messages %}
-                 <div class="flash-message {{ danger }}">
-                     {{ message }}
-                 </div>
-             {% endfor %}
-         </div>
-     {% endif %}
- {% endwith %}
-    <!-- 表單提交至 /leave -->
-    <form action="/leave" method="POST" enctype="multipart/form-data" onsubmit="validateForm(event)">
-        <label for="start_date">開始日期:</label><br>
-        <input type="date" id="start_date" name="start_date" required>
-        <br><br>
+    <div class="container">
+        <h1>請假系統</h1>
+        <!-- 顯示錯誤或成功訊息 -->
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="message">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-        <label for="end_date">結束日期:</label><br>
-        <input type="date" id="end_date" name="end_date" required>
-        <br><br>
+        <!-- 表單提交 -->
+        <form action="/leave" method="POST" enctype="multipart/form-data" onsubmit="validateForm(event)">
+            <label for="start_date">開始日期:</label>
+            <input type="date" id="start_date" name="start_date" required>
 
-        <label for="leave_type">請假類型:</label><br>
-        <select id="leave_type" name="leave_type" required onchange="toggleReceiptRequirement()">
-            <option value="病假">病假</option>
-            <option value="特休">特休</option>
-        </select>
-        <br><br>
+            <label for="end_date">結束日期:</label>
+            <input type="date" id="end_date" name="end_date" required>
 
-        <label for="half_day">半天:</label>
-        <input type="checkbox" id="half_day" name="half_day">
-        <br><br>
+            <label for="leave_type">請假類型:</label>
+            <select id="leave_type" name="leave_type" required onchange="toggleReceiptRequirement()">
+                <option value="特休">特休</option>
+                <option value="病假">病假</option>
+            </select>
 
-        <label for="reason">請假原因:</label><br>
-        <textarea id="reason" name="reason" rows="4" cols="50"></textarea>
-        <br><br>
+            <label for="half_day">半天:</label>
+            <input type="checkbox" id="half_day" name="half_day">
 
-        <!-- 文件上傳 -->
-        <label id="receipt-label" for="receipt">上傳收據:</label><br>
-        <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf">
-        <br><br>
-        
-        <button type="submit">提交</button>
-    </form>
+            <label for="reason">請假原因:</label>
+            <textarea id="reason" name="reason" rows="4" placeholder="輸入請假原因..."></textarea>
 
-    <a href="/base">前往我的頁面</a>
-    <p>
-        <a href="{{ url_for('logout') }}">登出</a>
-    </p>
+            <label id="receipt-label" for="receipt">上傳收據:</label>
+            <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf">
+
+            <button type="submit">提交</button>
+        </form>
+
+        <div class="link">
+            <a href="/base">前往我的頁面</a>
+            <br>
+            <a href="{{ url_for('logout') }}">登出</a>
+        </div>
+    </div>
 </body>
 </html>

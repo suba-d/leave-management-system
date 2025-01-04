@@ -4,94 +4,201 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用戶管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #f2f2f2;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-edit {
+            background-color: #4CAF50;
+        }
+
+        .btn-edit:hover {
+            background-color: #45a049;
+        }
+
+        .btn-delete {
+            background-color: #f44336;
+        }
+
+        .btn-delete:hover {
+            background-color: #e53935;
+        }
+
+        .record-list {
+            display: none;
+            margin-top: 10px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .record-list ul {
+            padding-left: 20px;
+        }
+
+        .logout {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .logout a {
+            text-decoration: none;
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .logout a:hover {
+            background-color: #e53935;
+        }
+    </style>
     <script>
+        // 展开或隐藏用户请假记录
         function toggleRecords(userId) {
             const recordsDiv = document.getElementById(`records-${userId}`);
-            if (recordsDiv.style.display === "none" || recordsDiv.style.display === "") {
-                recordsDiv.style.display = "block";
-            } else {
-                recordsDiv.style.display = "none";
-            }
+            recordsDiv.style.display = (recordsDiv.style.display === "none" || recordsDiv.style.display === "") ? "block" : "none";
         }
     </script>
 </head>
 <body>
-    <h1>用戶管理</h1>
+    <header>
+        <h1>用戶管理</h1>
+    </header>
 
-    <!-- 新增用戶 -->
-    <h2>新增用戶</h2>
-    <form action="/add_user" method="POST">
-        <label for="username">帳號:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">密碼:</label>
-        <input type="text" id="password" name="password" required>
-        <label for="annual_leave">特休:</label>
-        <input type="number" id="annual_leave" name="annual_leave" value="10">
-        <label for="sick_leave">病假:</label>
-        <input type="number" id="sick_leave" name="sick_leave" value="5">
-        <button type="submit">新增</button>
-    </form>
+    <div class="container">
+        <!-- 添加新用户 -->
+        <h2>新增用戶</h2>
+        <form action="/add_user" method="POST">
+            <label for="username">帳號:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">密碼:</label>
+            <input type="text" id="password" name="password" required>
+            <label for="annual_leave">特休:</label>
+            <input type="number" id="annual_leave" name="annual_leave" value="10">
+            <label for="sick_leave">病假:</label>
+            <input type="number" id="sick_leave" name="sick_leave" value="5">
+            <button class="btn btn-edit" type="submit">新增</button>
+        </form>
 
-    <!-- 用戶列表 -->
-    <h2>用戶列表</h2>
-    <table>
-        <tr>
-            <th>帳號</th>
-            <th>特休</th>
-            <th>病假</th>
-            <th>操作</th>
-        </tr>
-        {% for user in users %}
-        <tr>
-            <td>{{ user.username }}</td>
-            <td>
-                <form action="/update_user/{{ user.id }}" method="POST" style="display:inline;">
-                    <input type="number" name="annual_leave" value="{{ user.vacation_days }}" required>
-            </td>
-            <td>
-                    <input type="number" name="sick_leave" value="{{ user.sick_days }}" required>
-                    <button type="submit">更新</button>
-                </form>
-            </td>
-            <td>
-                <button onclick="toggleRecords('{{ user.id }}')">展開紀錄</button>
-                <form action="/delete_user/{{ user.id }}" method="POST" style="display:inline;">
-                    <button type="submit">刪除</button>
-                </form>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="4">
-                <div id="records-{{ user.id }}" style="display:none;">
-                    {% if leave_records[user.id] %}
-                        <ul>
-                            {% for record in leave_records[user.id] %}
-                            <li>
-                                {{ record.leave_type }}: {{ record.start_date }} ~ {{ record.end_date }}
-                                {% if record.reason %}
-                                    ({{ record.reason }})
-                                {% endif %}
-                                {% if record.receipt_url %}
-                                    <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
-                                {% endif %}
-                                <form action="/delete_leave/{{ record.id }}" method="POST" style="display:inline;">
-                                    <button type="submit" onclick="return confirm('確定要刪除這條記錄嗎？')">刪除</button>
-                                </form>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        無請假紀錄
-                    {% endif %}
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+        <!-- 用户列表 -->
+        <h2>用戶列表</h2>
+        <table>
+            <tr>
+                <th>帳號</th>
+                <th>特休</th>
+                <th>病假</th>
+                <th>操作</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <!-- 用 url_for('user_records', user_id=user.id) 產生路由 -->
+                    <a href="{{ url_for('user_records', user_id=user.id) }}">
+                        {{ user.username }}
+                    </a>
+                </td>
+                <td>
+                    <form action="/update_user/{{ user.id }}" method="POST" style="display:inline;">
+                        <input type="number" name="annual_leave" value="{{ user.vacation_days }}" required>
+                </td>
+                <td>
+                        <input type="number" name="sick_leave" value="{{ user.sick_days }}" required>
+                        <button class="btn btn-edit" type="submit">更新</button>
+                    </form>
+                </td>
+                <td>
+                    <button class="btn btn-edit" onclick="toggleRecords('{{ user.id }}')">展開紀錄</button>
+                    <form action="/delete_user/{{ user.id }}" method="POST" style="display:inline;">
+                        <button class="btn btn-delete" type="submit">刪除</button>
+                    </form>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <div id="records-{{ user.id }}" class="record-list">
+                        {% if leave_records[user.id] %}
+                            <ul>
+                                {% for record in leave_records[user.id][-5:] %}
+    <li>
+        {{ record.leave_type }}: {{ record.start_date }} ~ {{ record.end_date }}
+        {% if record.reason %}
+            ({{ record.reason }})
+        {% endif %}
+        {% if record.receipt_url %}
+            <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+        {% endif %}
+        <form action="{{ url_for('delete_leave', leave_id=record.id, redirect_to='admin') }}" method="POST" style="display:inline;">
+            <button type="submit" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>
+        </form>
+    </li>
+{% endfor %}
+                            </ul>
+                        {% else %}
+                            無請假紀錄
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
 
-    <!-- 登出按鈕 -->
-    <div>
-        <a href="{{ url_for('logout') }}">登出</a>
+        <!-- 登出 -->
+        <div class="logout">
+            <a href="{{ url_for('logout') }}">登出</a>
+        </div>
     </div>
 </body>
 </html>

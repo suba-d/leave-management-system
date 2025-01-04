@@ -1,50 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ user.username }} 的請假紀錄</title>
+    <title>使用者請假紀錄</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>{{ user.username }} 的請假紀錄</h1>
-    <table border="1">
-        <tr>
-            <th>請假類型</th>
-            <th>開始日期</th>
-            <th>結束日期</th>
-            <th>是否半天</th>
-            <th>原因</th>
-            <th>下載收據</th>
-            <th>操作</th>
-        </tr>
-        {% for record in leave_records %}
-        <tr>
-            <td>{{ record.leave_type }}</td>
-            <td>{{ record.start_date }}</td>
-            <td>{{ record.end_date }}</td>
-            <td>{{ '是' if record.half_day else '否' }}</td>
-            <td>{{ record.reason or '無' }}</td>
-            <td>
-                {% if record.receipt_url %}
-                    <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>使用者請假紀錄</h1>
+            <a href="{{ url_for('admin') }}" class="btn btn-primary">返回管理頁面</a>
+        </div>
+        
+        <!-- 顯示 Flash 消息 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert alert-dismissible fade show" role="alert">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <table class="table table-bordered table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>請假類型</th>
+                    <th>開始日期</th>
+                    <th>結束日期</th>
+                    <th>半天</th>
+                    <th>原因</th>
+                    <th>收據</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in leave_records %}
+                <tr>
+                    <td>{{ record.leave_type }}</td>
+                    <td>{{ record.start_date }}</td>
+                    <td>{{ record.end_date }}</td>
+                    <td>{{ '是' if record.half_day else '否' }}</td>
+                    <td>{{ record.reason or '無' }}</td>
+                    <td>
+                        {% if record.receipt_url %}
+                            <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+                        {% else %}
+                            無
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('delete_leave', leave_id=record.id, redirect_to='user_records') }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>
+                        </form>
+                    </td>
+                </tr>
                 {% else %}
-                    無
-                {% endif %}
-            </td>
-            <td>
-                <form action="{{ url_for('delete_leave', leave_id=record.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="7">尚無請假紀錄。</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <p>
-        <a href="{{ url_for('admin') }}">返回用戶管理</a>
-    </p>
+                <tr>
+                    <td colspan="7" class="text-center">尚無請假紀錄。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

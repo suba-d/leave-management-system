@@ -115,15 +115,16 @@ def create_app():
     def admin():
         if not current_user.is_admin:
             return redirect(url_for('base'))
-
-        # 獲取所有非管理員用戶及其請假記錄
+    
         users = User.query.filter_by(is_admin=False).all()
-        leave_records = {
-            user.id: LeaveRecord.query.filter_by(user_id=user.id).all()
-            for user in users
-        }
-
-        # 傳遞所有用戶與請假記錄到模板
+        leave_records = {}
+    
+        for user in users:
+            leave_records[user.id] = LeaveRecord.query.filter_by(user_id=user.id)\
+                .order_by(LeaveRecord.start_date.desc())\
+                .limit(5)\
+                .all()
+    
         return render_template('admin.html', users=users, leave_records=leave_records)
 
     @app.route('/user_records/<int:user_id>')
@@ -274,17 +275,15 @@ def create_app():
     @app.route('/delete_leave/<int:leave_id>', methods=['POST'])
     @login_required
     def delete_leave(leave_id):
-        leave_record = LeaveRecord.query.get(leave_id)
-        if not leave_record:
-            flash('請假記錄不存在', 'error')
-            return redirect(url_for('base'))
-
-        # 先記住使用者 ID，刪除紀錄後才能 redirect
-        user_id = leave_record.user_id
+        leave_record = LeaveRecord.query.get_or_404(leave_id)
         db.session.delete(leave_record)
         db.session.commit()
-        flash('成功刪除請假記錄', 'success')
-        return redirect(url_for('admin'))
+    
+        redirect_to = request.args.get('redirect_to')
+        if redirect_to == 'user_records':
+           return redirect(url_for('user_records', user_id=leave_record.user_id))
+        else:
+           return redirect(url_for('admin'))
 
     # 工廠函式最後一定要 return app
     return app
