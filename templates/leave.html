@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -116,7 +116,7 @@
         {% endwith %}
 
         <!-- 表單提交 -->
-        <form action="/leave" method="POST" enctype="multipart/form-data" onsubmit="validateForm(event)">
+        <form action="{{ url_for('leave') }}" method="POST" enctype="multipart/form-data" onsubmit="validateForm(event)">
             <label for="start_date">開始日期:</label>
             <input type="date" id="start_date" name="start_date" required>
 
@@ -142,10 +142,13 @@
         </form>
 
         <div class="link">
-            <a href="/base">前往我的頁面</a>
+            <a href="{{ url_for('base') }}">前往我的頁面</a>
             <br>
             <a href="{{ url_for('logout') }}">登出</a>
         </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

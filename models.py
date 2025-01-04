@@ -23,3 +23,4 @@ class LeaveRecord(db.Model):
     half_day = db.Column(db.Boolean, default=False)
     reason = db.Column(db.String(255))  # 確保模型中定義了 reason 欄位
     receipt_url = db.Column(db.String(500))  # 新增收據URL字段
+    days = db.Column(db.Float, nullable=False)  # 假設這個屬性表示請假天數

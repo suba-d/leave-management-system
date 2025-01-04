@@ -12,21 +12,26 @@
             <h1>使用者請假紀錄</h1>
             <a href="{{ url_for('admin') }}" class="btn btn-primary">返回管理頁面</a>
         </div>
-        
-        <!-- 顯示 Flash 消息 -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="alert alert-dismissible fade show" role="alert">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+
+        <!-- 修改密碼表單 -->
+        <div class="mb-4">
+            <h2>修改密碼</h2>
+            <form action="{{ url_for('update_password', user_id=user.id) }}" method="POST">
+                <div class="form-group">
+                    <label for="new_password">新密碼</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" required>
                 </div>
-            {% endif %}
-        {% endwith %}
-        
+                <button type="submit" class="btn btn-warning">修改密碼</button>
+            </form>
+        </div>
+
+        <!-- 每年度請假紀錄統計 -->
+        <div class="mb-4">
+            <h2>{{ current_year }} 年度請假紀錄統計</h2>
+            <p>特休: {{ annual_leave_days }} 天</p>
+            <p>病假: {{ sick_leave_days }} 天</p>
+        </div>
+
         <table class="table table-bordered table-hover">
             <thead class="thead-light">
                 <tr>

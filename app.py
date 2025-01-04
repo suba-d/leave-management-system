@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.service_account import Credentials
 import os
+from werkzeug.utils import secure_filename
 
 # models.py 裏頭只定義: db = SQLAlchemy() + (User, LeaveRecord)
 # 這裡直接 from models import db, User, LeaveRecord
@@ -132,7 +133,20 @@ def create_app():
     def user_records(user_id):
         user = User.query.get_or_404(user_id)
         leave_records = LeaveRecord.query.filter_by(user_id=user_id).all()
-        return render_template('user_records.html', user=user, leave_records=leave_records)
+
+        # 計算每年度的請假紀錄統計
+        current_year = datetime.now().year
+        annual_leave_days = 0
+        sick_leave_days = 0
+        for record in leave_records:
+            if record.start_date.year == current_year:
+                if record.leave_type == '特休':
+                    annual_leave_days += record.days
+                elif record.leave_type == '病假':
+                    sick_leave_days += record.days
+
+        return render_template('user_records.html', user=user, leave_records=leave_records, 
+                       annual_leave_days=annual_leave_days, sick_leave_days=sick_leave_days, current_year=current_year)
 
     @app.route('/base', methods=['GET'])
     @login_required
@@ -155,8 +169,8 @@ def create_app():
 
         username = request.form['username'].lower()
         password = request.form['password']
-        annual_leave = request.form['annual_leave']
-        sick_leave = request.form['sick_leave']
+        annual_leave = 10
+        sick_leave = 5
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
@@ -179,63 +193,76 @@ def create_app():
             flash(f'帳號 {username} 已存在或其他資料庫錯誤', 'danger')
 
         return redirect(url_for('admin'))
+    @app.route('/update_password/<int:user_id>', methods=['POST'])
+    @login_required
+    def update_password(user_id):
+        user = User.query.get_or_404(user_id)
+        new_password = request.form['new_password']
+        user.password = new_password  # 假設你有適當的密碼哈希處理
+        db.session.commit()
+        flash('密碼更新成功', 'success')
+        return redirect(url_for('user_records', user_id=user_id))
 
     @app.route('/leave', methods=['GET', 'POST'])
     @login_required
     def leave():
-        if request.method == 'GET':
-            return render_template('leave.html')
-
         if request.method == 'POST':
-            file = request.files.get('receipt')
-            leave_type = request.form.get('leave_type')
-            start_date = request.form.get('start_date')
-            end_date = request.form.get('end_date')
-            is_half_day = (request.form.get('half_day') == 'on')
-            reason = request.form.get('reason')
+            leave_type = request.form['leave_type']
+            start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d')
+            end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
+            half_day = 'half_day' in request.form
+            reason = request.form.get('reason', '')
+            receipt = request.files.get('receipt')
+            receipt_url = None
 
-            # 計算天數
-            try:
-                leave_days = calculate_half_day_leave_days(start_date, end_date, is_half_day)
-            except ValueError as e:
-                flash(str(e), 'danger')
+            if receipt:
+                filename = secure_filename(receipt.filename)
+                file_path = os.path.join('/tmp', filename)
+                receipt.save(file_path)
+                receipt_url = upload_to_google_drive(file_path, filename)
+                os.remove(file_path)  # 上傳後刪除臨時文件
+
+            # 檢查開始日期不能比結束日期小
+            if start_date > end_date:
+                flash('開始日期不能比結束日期晚', 'danger')
                 return redirect(url_for('leave'))
 
-            # 如果是病假 + 有附加檔案，就上傳到 Google Drive
-            receipt_url = None
-            if file and leave_type == '病假':
-                file_path = f"/tmp/{file.filename}"
-                file.save(file_path)
-                receipt_url = upload_to_google_drive(file_path, file.filename)
-                os.remove(file_path)
+            # 計算請假天數
+            delta = end_date - start_date
+            days = delta.days + 1  # 包含開始日期和結束日期
+            if half_day:
+                days -= 0.5
 
-            # 檢查剩餘天數
+            # 檢查剩餘天數是否足夠
+            if leave_type == '特休' and current_user.vacation_days < days:
+                flash('特休天數不足', 'danger')
+                return redirect(url_for('leave'))
+            elif leave_type == '病假' and current_user.sick_days < days:
+                flash('病假天數不足', 'danger')
+                return redirect(url_for('leave'))
+
+            # 更新使用者的特休或病假天數
             if leave_type == '特休':
-                if current_user.vacation_days < leave_days:
-                    flash("特休天數不足", 'danger')
-                    return redirect(url_for('leave'))
-                current_user.vacation_days -= leave_days
+                current_user.vacation_days -= days
             elif leave_type == '病假':
-                if current_user.sick_days < leave_days:
-                    flash("病假天數不足", 'danger')
-                    return redirect(url_for('leave'))
-                current_user.sick_days -= leave_days
+                current_user.sick_days -= days
 
-            # 建立請假紀錄
-            new_leave = LeaveRecord(
+            leave_record = LeaveRecord(
                 user_id=current_user.id,
                 leave_type=leave_type,
                 start_date=start_date,
                 end_date=end_date,
+                half_day=half_day,
                 reason=reason,
-                half_day=is_half_day,
-                receipt_url=receipt_url
+                receipt_url=receipt_url,
+                days=days
             )
-            db.session.add(new_leave)
+            db.session.add(leave_record)
             db.session.commit()
+            flash('請假申請成功', 'success')
+            return redirect(url_for('leave'))
 
-            flash("請假成功", 'success')
-            return redirect(url_for('base'))
+        return render_template('leave.html')
 
     @app.route('/update_user/<int:user_id>', methods=['POST'])
     @login_required
@@ -276,14 +303,28 @@ def create_app():
     @login_required
     def delete_leave(leave_id):
         leave_record = LeaveRecord.query.get_or_404(leave_id)
+        user_id = leave_record.user_id
         db.session.delete(leave_record)
         db.session.commit()
-    
-        redirect_to = request.args.get('redirect_to')
-        if redirect_to == 'user_records':
-           return redirect(url_for('user_records', user_id=leave_record.user_id))
-        else:
-           return redirect(url_for('admin'))
+        flash('刪除請假紀錄成功', 'success')
+        return redirect(url_for('user_records', user_id=user_id))
+
+    @app.route('/update_leave_days/<int:leave_id>', methods=['POST'])
+    @login_required
+    def update_leave_days(leave_id):
+        leave_record = LeaveRecord.query.get_or_404(leave_id)
+        try:
+            leave_days = float(request.form['leave_days'])
+            if leave_days <= 0:
+                flash('請假天數必須大於0', 'danger')
+            else:
+                leave_record.leave_days = leave_days
+                db.session.commit()
+                flash('更新請假天數成功', 'success')
+        except ValueError:
+            flash('請輸入有效的請假天數', 'danger')
+        
+        return redirect(url_for('admin'))
 
     # 工廠函式最後一定要 return app
     return app
