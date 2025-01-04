@@ -116,9 +116,15 @@ def create_app():
         if not current_user.is_admin:
             return redirect(url_for('base'))
 
-        # 取得所有非管理員帳號
+        # 獲取所有非管理員用戶及其請假記錄
         users = User.query.filter_by(is_admin=False).all()
-        return render_template('admin.html', users=users)
+        leave_records = {
+            user.id: LeaveRecord.query.filter_by(user_id=user.id).all()
+            for user in users
+        }
+
+        # 傳遞所有用戶與請假記錄到模板
+        return render_template('admin.html', users=users, leave_records=leave_records)
 
     @app.route('/user_records/<int:user_id>')
     @login_required
@@ -278,7 +284,7 @@ def create_app():
         db.session.delete(leave_record)
         db.session.commit()
         flash('成功刪除請假記錄', 'success')
-        return redirect(url_for('user_records', user_id=user_id))
+        return redirect(url_for('admin'))
 
     # 工廠函式最後一定要 return app
     return app

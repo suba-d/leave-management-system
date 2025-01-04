@@ -4,46 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>個人資料</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center; /* 水平置中 */
+            align-items: center;    /* 垂直置中 */
+            min-height: 100vh;      /* 讓內容填滿視窗高度 */
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;     /* 讓文字置中 */
+            background: white;      /* 背景為白色 */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            margin: 0 auto;         /* 表格置中 */
+            border-collapse: collapse;
+            width: 80%;             /* 調整表格寬度 */
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
 </head>
 <body>
-    <h1>歡迎, {{ username }}</h1>
-    <p>剩餘特休：{{ vacation_days }} 天</p>
-    <p>剩餘病假：{{ sick_days }} 天</p>
+    <div class="container">
+        <h1>歡迎, {{ username }}</h1>
+        <p>剩餘特休：{{ vacation_days }} 天</p>
+        <p>剩餘病假：{{ sick_days }} 天</p>
 
-    <!-- 顯示請假紀錄 -->
-    <h2>請假紀錄</h2>
-    <table>
-        <tr>
-            <th>請假類型</th>
-            <th>開始日期</th>
-            <th>結束日期</th>
-            <th>是否半天</th>
-            <th>原因</th>
-            <th>收據下載</th>
-        </tr>
-        {% for record in leave_records %}
-        <tr>
-            <td>{{ record.leave_type }}</td>
-            <td>{{ record.start_date }}</td>
-            <td>{{ record.end_date }}</td>
-            <td>{{ '是' if record.half_day else '否' }}</td>
-            <td>{{ record.reason }}</td>
-            <td>
-                {% if record.receipt_url %}
-                <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
-                {% else %}
-                無收據
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+        <!-- 顯示請假紀錄 -->
+        <h2>請假紀錄</h2>
+        <table>
+            <tr>
+                <th>請假類型</th>
+                <th>開始日期</th>
+                <th>結束日期</th>
+                <th>是否半天</th>
+                <th>原因</th>
+                <th>收據下載</th>
+            </tr>
+            {% for record in leave_records %}
+            <tr>
+                <td>{{ record.leave_type }}</td>
+                <td>{{ record.start_date }}</td>
+                <td>{{ record.end_date }}</td>
+                <td>{{ '是' if record.half_day else '否' }}</td>
+                <td>{{ record.reason }}</td>
+                <td>
+                    {% if record.receipt_url %}
+                    <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+                    {% else %}
+                    無收據
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
 
-    <a href="/leave">
-        <button>前往請假系統</button>
-    </a>
-    <p>
-        <a href="{{ url_for('logout') }}">登出</a>
-    </p>
+        <a href="/leave">
+            <button>前往請假系統</button>
+        </a>
+        <p>
+            <a href="{{ url_for('logout') }}">登出</a>
+        </p>
+    </div>
 </body>
 </html>

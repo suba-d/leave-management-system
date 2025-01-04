@@ -3,110 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super用戶管理</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
+    <title>用戶管理</title>
+    <script>
+        function toggleRecords(userId) {
+            const recordsDiv = document.getElementById(`records-${userId}`);
+            if (recordsDiv.style.display === "none" || recordsDiv.style.display === "") {
+                recordsDiv.style.display = "block";
+            } else {
+                recordsDiv.style.display = "none";
+            }
         }
-        h1, h2 {
-            text-align: center;
-            color: #333;
-        }
-        form {
-            margin: 20px auto;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-        }
-        form label {
-            display: block;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        form input, form button {
-            width: 100%;
-            padding: 8px; /* 減小按鈕和輸入框的高度 */
-            margin-top: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px; /* 調整字體大小 */
-        }
-        form button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 14px; /* 調整按鈕文字大小 */
-        }
-        form button:hover {
-            background-color: #45a049;
-        }
-        table {
-            width: 90%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        table th, table td {
-            border: 1px solid #ddd;
-            padding: 8px; /* 減小表格單元格內距 */
-            text-align: center;
-            font-size: 14px; /* 調整字體大小 */
-        }
-        table th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        table tr:hover {
-            background-color: #f1f1f1;
-        }
-        .logout {
-            text-align: center;
-            margin: 20px;
-        }
-        .logout a {
-            text-decoration: none;
-            padding: 8px 8px; /* 減小按鈕內距 */
-            background-color: #f44336;
-            color: white;
-            border-radius: 4px;
-            font-size: 14px; /* 調整字體大小 */
-        }
-        .logout a:hover {
-            background-color: #e53935;
-        }
-        table form button {
-    font-size: 12px; /* 字體大小 */
-    padding: 4px 4px; /* 內距 */
-    border-radius: 4px; /* 圓角 */
-    cursor: pointer;
-    border: none;
-    background-color: #4CAF50; /* 默認綠色背景 */
-    color: white;
-}
-
-table form button:hover {
-    background-color: #45a049; /* 滑鼠懸停變化 */
-}
-
-form[action*="delete_user"] button {
-    background-color: #f44336; /* 刪除按鈕紅色背景 */
-}
-
-form[action*="delete_user"] button:hover {
-    background-color: #e53935; /* 滑鼠懸停變化 */
-}
-    </style>
+    </script>
 </head>
 <body>
     <h1>用戶管理</h1>
@@ -129,38 +36,61 @@ form[action*="delete_user"] button:hover {
     <h2>用戶列表</h2>
     <table>
         <tr>
-            <th>ID</th>
             <th>帳號</th>
             <th>特休</th>
             <th>病假</th>
             <th>操作</th>
         </tr>
-        {% for user in users if not user.is_admin %}
+        {% for user in users %}
         <tr>
-            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
             <td>
-                <a href="{{ url_for('user_records', user_id=user.id) }}">{{ user.username }}</a>
-            </td>
-            <td>
-                <form action="/update_user/{{ user.id }}" method="POST">
+                <form action="/update_user/{{ user.id }}" method="POST" style="display:inline;">
                     <input type="number" name="annual_leave" value="{{ user.vacation_days }}" required>
             </td>
             <td>
                     <input type="number" name="sick_leave" value="{{ user.sick_days }}" required>
-            </td>
-            <td>
                     <button type="submit">更新</button>
                 </form>
-                <form action="/delete_user/{{ user.id }}" method="POST">
+            </td>
+            <td>
+                <button onclick="toggleRecords('{{ user.id }}')">展開紀錄</button>
+                <form action="/delete_user/{{ user.id }}" method="POST" style="display:inline;">
                     <button type="submit">刪除</button>
                 </form>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <div id="records-{{ user.id }}" style="display:none;">
+                    {% if leave_records[user.id] %}
+                        <ul>
+                            {% for record in leave_records[user.id] %}
+                            <li>
+                                {{ record.leave_type }}: {{ record.start_date }} ~ {{ record.end_date }}
+                                {% if record.reason %}
+                                    ({{ record.reason }})
+                                {% endif %}
+                                {% if record.receipt_url %}
+                                    <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+                                {% endif %}
+                                <form action="/delete_leave/{{ record.id }}" method="POST" style="display:inline;">
+                                    <button type="submit" onclick="return confirm('確定要刪除這條記錄嗎？')">刪除</button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        無請假紀錄
+                    {% endif %}
+                </div>
             </td>
         </tr>
         {% endfor %}
     </table>
 
-    <!-- 登出按鈕/連結 -->
-    <div class="logout">
+    <!-- 登出按鈕 -->
+    <div>
         <a href="{{ url_for('logout') }}">登出</a>
     </div>
 </body>
