@@ -9,6 +9,7 @@ from googleapiclient.http import MediaFileUpload
 from google.oauth2.service_account import Credentials
 import os
 from werkzeug.utils import secure_filename
+import logging
 
 # models.py 裏頭只定義: db = SQLAlchemy() + (User, LeaveRecord)
 # 這裡直接 from models import db, User, LeaveRecord
@@ -44,17 +45,28 @@ def calculate_half_day_leave_days(start_date_str, end_date_str, is_half_day):
 
 
 def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
-    file_metadata = {'name': file_name}
-    if parent_folder_id:
-        file_metadata['parents'] = [parent_folder_id]
+    try:
+        file_metadata = {'name': file_name}
+        if parent_folder_id:
+            file_metadata['parents'] = [parent_folder_id]
 
-    media = MediaFileUpload(file_path, mimetype='application/pdf')
-    uploaded_file = drive_service.files().create(
-        body=file_metadata, 
-        media_body=media, 
-        fields='id'
-    ).execute()
-    return f"https://drive.google.com/file/d/{uploaded_file['id']}/view"
+        media = MediaFileUpload(file_path, mimetype='application/pdf')
+        uploaded_file = drive_service.files().create(
+            body=file_metadata, 
+            media_body=media, 
+            fields='id'
+        ).execute()
+
+        # 設置文件為公開可見
+        drive_service.permissions().create(
+            fileId=uploaded_file['id'],
+            body={'role': 'reader', 'type': 'anyone'}
+        ).execute()
+
+        return f"https://drive.google.com/thumbnail?id={uploaded_file['id']}"
+    except Exception as e:
+        logging.error(f"Error uploading file to Google Drive: {e}")
+        return None
 
 
 def create_app():
@@ -326,5 +338,5 @@ def create_app():
         
         return redirect(url_for('admin'))
 
-    # 工廠函式最後一定要 return app
+    # 工廠函式最後一定要 return app 
     return app
