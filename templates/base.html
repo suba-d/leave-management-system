@@ -1,50 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人資料</title>
+    <title>請假紀錄</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .link a {
+            text-decoration: none;
+            color: #4CAF50;
+        }
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>歡迎, {{ username }}</h1>
-    <p>剩餘特休：{{ vacation_days }} 天</p>
-    <p>剩餘病假：{{ sick_days }} 天</p>
+    <div class="container">
+        <h1>請假紀錄</h1>
+        <!-- 顯示錯誤或成功訊息 -->
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="message">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-    <!-- 顯示請假紀錄 -->
-    <h2>請假紀錄</h2>
-    <table>
-        <tr>
-            <th>請假類型</th>
-            <th>開始日期</th>
-            <th>結束日期</th>
-            <th>是否半天</th>
-            <th>原因</th>
-            <th>收據</th>
-        </tr>
-        {% for record in leave_records %}
-        <tr>
-            <td>{{ record.leave_type }}</td>
-            <td>{{ record.start_date }}</td>
-            <td>{{ record.end_date }}</td>
-            <td>{{ '是' if record.half_day else '否' }}</td>
-            <td>{{ record.reason }}</td>
-            <td>
-                {% if record.receipt_url %}
-                {% set drive_image_url = record.receipt_url.replace('file/d/', 'uc?export=view&id=').replace('/view', '') %}
-                <img src="{{ drive_image_url }}" alt="收據圖片" style="max-width: 100px; max-height: 100px;">
-            {% else %}
-                無收據
-            {% endif %}
-        </td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table>
+            <tr>
+                <th>請假類型</th>
+                <th>開始日期</th>
+                <th>結束日期</th>
+                <th>是否半天</th>
+                <th>原因</th>
+                <th>收據</th>
+            </tr>
+            {% for record in leave_records %}
+            <tr>
+                <td>{{ record.leave_type }}</td>
+                <td>{{ record.start_date }}</td>
+                <td>{{ record.end_date }}</td>
+                <td>{{ '是' if record.half_day else '否' }}</td>
+                <td>{{ record.reason }}</td>
+                <td>
+                    {% if record.receipt_url %}
+                        {% set drive_image_url = record.receipt_url.replace('file/d/', 'uc?export=view&id=').replace('/view', '') %}
+                        <img src="{{ drive_image_url }}" alt="收據圖片" style="max-width: 100px; max-height: 100px;">
+                    {% else %}
+                        無收據
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
 
-    <a href="/leave">
-        <button>前往請假系統</button>
-    </a>
-    <p>
-        <a href="{{ url_for('logout') }}">登出</a>
-    </p>
+        <div class="link">
+            <a href="{{ url_for('leave') }}">申請請假</a>
+            <br>
+            <a href="{{ url_for('logout') }}">登出</a>
+        </div>
+    </div>
 </body>
 </html>

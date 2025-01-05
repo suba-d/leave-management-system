@@ -130,7 +130,9 @@
                                             ({{ record.reason }})
                                         {% endif %}
                                         {% if record.receipt_url %}
-                                            <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+                                        <img src="{{ record.receipt_url }}" alt="收據圖片" style="max-width: 100px; max-height: 100px;">
+                                        {% else %}
+                                            無收據
                                         {% endif %}
                                         <form action="{{ url_for('delete_leave', leave_id=record.id, redirect_to='admin') }}" method="POST" style="display:inline;">
                                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>

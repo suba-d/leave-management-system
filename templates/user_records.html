@@ -54,7 +54,7 @@
                     <td>{{ record.reason or '無' }}</td>
                     <td>
                         {% if record.receipt_url %}
-                            <a href="{{ record.receipt_url }}" target="_blank">下載收據</a>
+                            <img src="{{ record.receipt_url }}" alt="收據圖片" style="max-width: 100px; max-height: 100px; margin-top: 10px;">
                         {% else %}
                             無
                         {% endif %}

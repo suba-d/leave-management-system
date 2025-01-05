@@ -143,7 +143,7 @@ def create_app():
     @app.route('/user_records/<int:user_id>')
     @login_required
     def user_records(user_id):
-        user = User.query.get_or_404(user_id)
+        user = User.query.get(user_id)
         leave_records = LeaveRecord.query.filter_by(user_id=user_id).all()
 
         # 計算每年度的請假紀錄統計
@@ -319,7 +319,13 @@ def create_app():
         db.session.delete(leave_record)
         db.session.commit()
         flash('刪除請假紀錄成功', 'success')
-        return redirect(url_for('user_records', user_id=user_id))
+        
+        # 根據 referer 來決定跳轉頁面
+        referer = request.headers.get("Referer")
+        if referer and 'admin' in referer:
+            return redirect(url_for('admin'))
+        else:
+            return redirect(url_for('user_records', user_id=user_id))
 
     @app.route('/update_leave_days/<int:leave_id>', methods=['POST'])
     @login_required
