@@ -18,12 +18,30 @@ from models import db, User, LeaveRecord
 # forms.py 如果你真的有用 WTForms，就 import；若沒用到可移除
 from forms import LoginForm  # 看你實際需求
 
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
+SCOPES = [
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/calendar'
+]
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
 creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+calendar_service = build('calendar', 'v3', credentials=creds)
 drive_service = build('drive', 'v3', credentials=creds)
+
+def create_calendar_event(summary, start_date, end_date, calendar_id='c_5a0402820b477847c2ada72002977033714ea8385aed41bbc6962789ab53783f@group.calendar.google.com'):
+    try:
+        event = {
+            'summary': summary,
+            'start': {'date': start_date.isoformat()},
+            'end': {'date': end_date.isoformat()},
+        }
+        created_event = calendar_service.events().insert(calendarId=calendar_id, body=event).execute()
+        return created_event
+    except Exception as e:
+        logging.error(f"Error creating calendar event: {e}")
+        return None
 
 
 def calculate_half_day_leave_days(start_date_str, end_date_str, is_half_day):
@@ -273,6 +291,18 @@ def create_app():
             db.session.commit()
             flash('請假申請成功', 'success')
             return redirect(url_for('leave'))
+            
+            if start_date > end_date:
+                flash('開始日期不能比結束日期晚', 'danger')
+                return redirect(url_for('leave'))
+            event_summary = f"{current_user.username} 的請假 - {leave_type}"
+            calendar_event = create_calendar_event(event_summary, start_date, end_date)
+
+            if calendar_event:
+                flash('請假已同步至 Google 日曆', 'success')
+            else:
+                flash('請假同步 Google 日曆失敗', 'warning')
+
 
         return render_template('leave.html')
 
