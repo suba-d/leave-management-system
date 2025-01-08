@@ -26,19 +26,27 @@ SCOPES = [
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
-creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-calendar_service = build('calendar', 'v3', credentials=creds)
-drive_service = build('drive', 'v3', credentials=creds)
+try:
+    creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    calendar_service = build('calendar', 'v3', credentials=creds)
+    drive_service = build('drive', 'v3', credentials=creds)
+    logging.info("Google Calendar API 初始化成功")
+except Exception as e:
+    logging.error(f"Google Calendar API 初始化失敗: {e}")
+    exit(1)
+
 
 def create_calendar_event(summary, start_date, end_date, calendar_id='c_5a0402820b477847c2ada72002977033714ea8385aed41bbc6962789ab53783f@group.calendar.google.com'):
     try:
         event = {
             'summary': summary,
-            'start': {'date': start_date.isoformat()},
-            'end': {'date': end_date.isoformat()},
+            'start': {'dateTime': start_date.isoformat() + 'Z'},
+            'end': {'dateTime': end_date.isoformat() + 'Z'},
         }
-        created_event = calendar_service.events().insert(calendarId=calendar_id, body=event).execute()
-        return created_event
+        logging.debug(f"Creating event: {event}")
+        event = calendar_service.events().insert(calendarId=calendar_id, body=event).execute()
+        logging.info(f"Event created successfully: {event.get('htmlLink')}")
+        return event.get('htmlLink')
     except Exception as e:
         logging.error(f"Error creating calendar event: {e}")
         return None
@@ -182,13 +190,27 @@ def create_app():
     @login_required
     def base():
         # 取得當前使用者請假紀錄
+        
         leave_records = LeaveRecord.query.filter_by(user_id=current_user.id).all()
+        # 計算每年度的請假紀錄統計
+        current_year = datetime.now().year
+        annual_leave_days = 0
+        sick_leave_days = 0
+        for record in leave_records:
+            if record.start_date.year == current_year:
+                if record.leave_type == '特休':
+                    annual_leave_days += record.days
+                elif record.leave_type == '病假':
+                    sick_leave_days += record.days
         return render_template(
             'base.html',
             username=current_user.username,
             vacation_days=current_user.vacation_days,
             sick_days=current_user.sick_days,
-            leave_records=leave_records
+            leave_records=leave_records,
+            annual_leave_days=annual_leave_days,
+            current_year=current_year,
+            sick_leave_days=sick_leave_days
         )
 
     @app.route('/add_user', methods=['POST'])
@@ -198,6 +220,7 @@ def create_app():
             return redirect(url_for('base'))
 
         username = request.form['username'].lower()
+        username = username.capitalize()  # 第一個字母大寫，其餘字母小寫
         password = request.form['password']
         annual_leave = 10
         sick_leave = 5
@@ -245,6 +268,7 @@ def create_app():
             receipt = request.files.get('receipt')
             receipt_url = None
 
+            # 上傳收據處理
             if receipt:
                 filename = secure_filename(receipt.filename)
                 file_path = os.path.join('/tmp', filename)
@@ -252,7 +276,7 @@ def create_app():
                 receipt_url = upload_to_google_drive(file_path, filename)
                 os.remove(file_path)  # 上傳後刪除臨時文件
 
-            # 檢查開始日期不能比結束日期小
+            # 檢查開始日期不能比結束日期晚
             if start_date > end_date:
                 flash('開始日期不能比結束日期晚', 'danger')
                 return redirect(url_for('leave'))
@@ -277,6 +301,7 @@ def create_app():
             elif leave_type == '病假':
                 current_user.sick_days -= days
 
+            # 新增請假記錄
             leave_record = LeaveRecord(
                 user_id=current_user.id,
                 leave_type=leave_type,
@@ -287,24 +312,29 @@ def create_app():
                 receipt_url=receipt_url,
                 days=days
             )
-            db.session.add(leave_record)
-            db.session.commit()
-            flash('請假申請成功', 'success')
+
+            try:
+                db.session.add(leave_record)
+                db.session.commit()
+                flash('請假申請成功', 'success')
+
+                # 創建 Google 日曆事件
+                event_summary = f"{current_user.username} - {leave_type}"
+                calendar_event = create_calendar_event(event_summary, start_date, end_date)
+
+                if calendar_event:
+                    flash('請假已同步至 Google 日曆', 'success')
+                else:
+                    flash('請假同步 Google 日曆失敗', 'warning')
+
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error saving leave record to database: {e}")
+                flash('請假申請失敗，請稍後再試', 'danger')
+
             return redirect(url_for('leave'))
-            
-            if start_date > end_date:
-                flash('開始日期不能比結束日期晚', 'danger')
-                return redirect(url_for('leave'))
-            event_summary = f"{current_user.username} 的請假 - {leave_type}"
-            calendar_event = create_calendar_event(event_summary, start_date, end_date)
 
-            if calendar_event:
-                flash('請假已同步至 Google 日曆', 'success')
-            else:
-                flash('請假同步 Google 日曆失敗', 'warning')
-
-
-        return render_template('leave.html')
+        return render_template('leave.html',username=current_user.username)
 
     @app.route('/update_user/<int:user_id>', methods=['POST'])
     @login_required

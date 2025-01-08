@@ -103,7 +103,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>請假系統</h1>
+        <h1>{{ username }}的請假系統</h1>
         <!-- 顯示錯誤或成功訊息 -->
         {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}

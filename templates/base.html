@@ -60,7 +60,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>請假紀錄</h1>
+        <h1>{{ username }}的請假紀錄</h1>
         <!-- 顯示錯誤或成功訊息 -->
         {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
@@ -72,8 +72,8 @@
         {% endif %}
         {% endwith %}
         <div class="leave-balance">
-		<p>目前剩餘特休天數:{{ current_user.vacation_days }}天</p>
-		<p>目前剩餘病假天數:{{ current_user.sick_days }}天</p>
+		<p>目前剩餘特休天數:{{ current_user.vacation_days }}天 {{ current_year }} 年已請特休: {{ annual_leave_days }} 天</p>
+		<p>目前剩餘病假天數:{{ current_user.sick_days }}天 {{ current_year }} 年已請病假: {{ sick_leave_days }} 天</p>
 	</div>
         <table>
             <tr>
