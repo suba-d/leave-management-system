@@ -10,7 +10,7 @@
             const leaveType = document.getElementById("leave_type").value;
             const receipt = document.getElementById("receipt").files.length;
 
-            if (leaveType === "病假" && receipt === 0) {
+            if (["病假", "同情假"].includes(leaveType) && receipt === 0) {
                 alert("請上傳證明！");
                 event.preventDefault(); // 阻止表單提交
             }
@@ -36,7 +36,7 @@
             const receiptLabel = document.getElementById("receipt-label");
             const receiptInput = document.getElementById("receipt");
 
-            if (leaveType === "病假") {
+            if  (["病假", "同情假"].includes(leaveType)){
                 receiptLabel.style.color = "red";
                 receiptLabel.textContent = "上傳證明 (必填):";
                 receiptInput.required = true;
