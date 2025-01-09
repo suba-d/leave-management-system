@@ -11,8 +11,22 @@
             const receipt = document.getElementById("receipt").files.length;
 
             if (leaveType === "病假" && receipt === 0) {
-                alert("請上傳收據，病假必須附上收據！");
+                alert("請上傳證明！");
                 event.preventDefault(); // 阻止表單提交
+            }
+        }
+        function toggleHalfDayAvailability() {
+            const leaveType = document.getElementById("leave_type").value;
+            const halfDayCheckbox = document.getElementById("half_day");
+
+            // 定義允許半天的假別
+            const allowedHalfDayTypes = ["病假", "事假", "家庭照顧假"];
+
+            if (allowedHalfDayTypes.includes(leaveType)) {
+                halfDayCheckbox.disabled = false;
+            } else {
+                halfDayCheckbox.disabled = true;
+                halfDayCheckbox.checked = false; // 禁用時取消勾選
             }
         }
 
@@ -24,14 +38,24 @@
 
             if (leaveType === "病假") {
                 receiptLabel.style.color = "red";
-                receiptLabel.textContent = "上傳收據 (病假必填):";
+                receiptLabel.textContent = "上傳證明 (必填):";
                 receiptInput.required = true;
             } else {
                 receiptLabel.style.color = "black";
-                receiptLabel.textContent = "上傳收據:";
+                receiptLabel.textContent = "上傳證明:";
                 receiptInput.required = false;
             }
         }
+
+        function handleFormBehavior(event) {
+            toggleReceiptRequirement();
+            toggleHalfDayAvailability();
+        }
+
+        // 綁定事件
+        document.getElementById("leave_type").addEventListener("change", () => handleFormBehavior());
+        document.querySelector("form").addEventListener("submit", (event) => handleFormBehavior(event));
+        window.addEventListener("DOMContentLoaded", () => handleFormBehavior());
     </script>
     <style>
         body {
@@ -124,18 +148,23 @@
             <input type="date" id="end_date" name="end_date" required>
 
             <label for="leave_type">請假類型:</label>
-            <select id="leave_type" name="leave_type" required onchange="toggleReceiptRequirement()">
+            <select id="leave_type" name="leave_type" required onchange="handleFormBehavior()">
                 <option value="特休">特休</option>
                 <option value="病假">病假</option>
+                <option value="事假">事假</option>
+                <option value="生理假">生理假</option>
+                <option value="家庭照顧假">家庭照顧假</option>
+                <option value="同情假">同情假</option>
             </select>
+            <div style="display: flex; align-items: center;">
+                <label for="half_day" style="margin-right: 10px; margin-bottom: 0;">半天:</label>
+                <input type="checkbox" id="half_day" name="half_day" disabled style="margin-bottom: 0;">
+            </div>
 
-            <label for="half_day">半天:</label>
-            <input type="checkbox" id="half_day" name="half_day">
+            <label for="reason">請假原因（必填）:</label>
+            <textarea id="reason" name="reason" rows="4" placeholder="輸入請假原因..."required></textarea>
 
-            <label for="reason">請假原因:</label>
-            <textarea id="reason" name="reason" rows="4" placeholder="輸入請假原因..."></textarea>
-
-            <label id="receipt-label" for="receipt">上傳收據:</label>
+            <label id="receipt-label" for="receipt">上傳證明:</label>
             <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf">
 
             <button type="submit">提交</button>

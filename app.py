@@ -176,15 +176,28 @@ def create_app():
         current_year = datetime.now().year
         annual_leave_days = 0
         sick_leave_days = 0
+        personal_leave_days=0
+        menstrual_leave_days=0
+        family_care_leave_days=0
+        compassionate_leave_days=0
+
         for record in leave_records:
             if record.start_date.year == current_year:
                 if record.leave_type == '特休':
                     annual_leave_days += record.days
                 elif record.leave_type == '病假':
                     sick_leave_days += record.days
+                elif record.leave_type == '事假':
+                    personal_leave_days += record.days
+                elif record.leave_type == '生理假':
+                    menstrual_leave_days += record.days
+                elif record.leave_type == '家庭照顧假':
+                    family_care_leave_days += record.days
+                elif record.leave_type == '同情假':
+                    compassionate_leave_days += record.days            
 
         return render_template('user_records.html', user=user, leave_records=leave_records, 
-                       annual_leave_days=annual_leave_days, sick_leave_days=sick_leave_days, current_year=current_year)
+                       annual_leave_days=annual_leave_days, sick_leave_days=sick_leave_days,personal_leave_days=personal_leave_days,menstrual_leave_days=menstrual_leave_days,family_care_leave_days=family_care_leave_days,compassionate_leave_days=compassionate_leave_days ,current_year=current_year)
 
     @app.route('/base', methods=['GET'])
     @login_required
@@ -196,21 +209,41 @@ def create_app():
         current_year = datetime.now().year
         annual_leave_days = 0
         sick_leave_days = 0
+        personal_leave_days=0
+        menstrual_leave_days=0
+        family_care_leave_days=0
+        compassionate_leave_days=0
         for record in leave_records:
             if record.start_date.year == current_year:
                 if record.leave_type == '特休':
                     annual_leave_days += record.days
                 elif record.leave_type == '病假':
                     sick_leave_days += record.days
+                elif record.leave_type == '事假':
+                    personal_leave_days += record.days
+                elif record.leave_type == '生理假':
+                    menstrual_leave_days += record.days
+                elif record.leave_type == '家庭照顧假':
+                    family_care_leave_days += record.days
+                elif record.leave_type == '同情假':
+                    compassionate_leave_days += record.days        
         return render_template(
             'base.html',
             username=current_user.username,
             vacation_days=current_user.vacation_days,
             sick_days=current_user.sick_days,
+            personal_days=current_user.personal_days,
+            menstrual_days=current_user.menstrual_days,
+            family_care_days=current_user.family_care_days,
+            compassionate_days=current_user.compassionate_days,
             leave_records=leave_records,
             annual_leave_days=annual_leave_days,
             current_year=current_year,
-            sick_leave_days=sick_leave_days
+            sick_leave_days=sick_leave_days,
+            personal_leave_days=personal_leave_days,
+            menstrual_leave_days=menstrual_leave_days,
+            family_care_leave_days=family_care_leave_days,
+            compassionate_leave_days=compassionate_leave_days
         )
 
     @app.route('/add_user', methods=['POST'])
@@ -224,6 +257,10 @@ def create_app():
         password = request.form['password']
         annual_leave = 10
         sick_leave = 5
+        personal_leave = 14
+        menstrual_leave = 5
+        family_care_leave = 7
+        compassionate_leave = 3
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
@@ -234,7 +271,12 @@ def create_app():
             username=username,
             password=password,
             vacation_days=annual_leave,
-            sick_days=sick_leave
+            sick_days=sick_leave,
+            personal_days=personal_leave,
+            menstrual_days=menstrual_leave,
+            family_care_days=family_care_leave,
+            compassionate_days=compassionate_leave
+            
         )
         db.session.add(new_user)
 
@@ -288,18 +330,25 @@ def create_app():
                 days -= 0.5
 
             # 檢查剩餘天數是否足夠
-            if leave_type == '特休' and current_user.vacation_days < days:
-                flash('特休天數不足', 'danger')
-                return redirect(url_for('leave'))
-            elif leave_type == '病假' and current_user.sick_days < days:
-                flash('病假天數不足', 'danger')
-                return redirect(url_for('leave'))
+            leave_days_mapping = {
+                '特休': 'vacation_days',
+                '病假': 'sick_days',
+                '事假': 'personal_days',
+                '生理假': 'menstrual_days',
+                '家庭照顧假': 'family_care_days',
+                '同情假': 'compassionate_days',
+            }
+            if leave_type in leave_days_mapping:
+                remaining_days = getattr(current_user, leave_days_mapping[leave_type])
+                if days > remaining_days:
+                    flash(f'{leave_type} 剩餘天數不足', 'danger')
+                    return redirect(url_for('leave'))
 
             # 更新使用者的特休或病假天數
-            if leave_type == '特休':
-                current_user.vacation_days -= days
-            elif leave_type == '病假':
-                current_user.sick_days -= days
+                setattr(current_user, leave_days_mapping[leave_type], remaining_days - days)
+            else:
+                flash('未知的請假類型', 'danger')
+                return redirect(url_for('leave'))
 
             # 新增請假記錄
             leave_record = LeaveRecord(
@@ -344,11 +393,20 @@ def create_app():
 
         annual_leave = request.form['annual_leave']
         sick_leave = request.form['sick_leave']
+        personal_leave=request.form['personal_leave']
+        menstrual_leave=request.form['menstrual_leave']
+        family_care_leave=request.form['family_care_leave']
+        compassionate_leave=request.form['compassionate_leave']
+        
 
         user = User.query.get(user_id)
         if user:
             user.vacation_days = annual_leave
             user.sick_days = sick_leave
+            user.personal_days=personal_leave
+            user.menstrual_days=menstrual_leave
+            user.family_care_days=family_care_leave
+            user.compassionate_days=compassionate_leave
             db.session.commit()
             flash('用戶天數更新成功', 'success')
         else:

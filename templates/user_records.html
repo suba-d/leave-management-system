@@ -30,6 +30,10 @@
             <h2>{{ current_year }} 年度請假紀錄統計</h2>
             <p>特休: {{ annual_leave_days }} 天</p>
             <p>病假: {{ sick_leave_days }} 天</p>
+            <p>事假: {{ personal_leave_days }} 天</p>
+            <p>生理假: {{ menstrual_leave_days }} 天</p>
+            <p>家庭照顧假: {{ family_care_leave_days }} 天</p>
+            <p>同情假: {{ compassionate_leave_days }} 天</p>
         </div>
 
         <table class="table table-bordered table-hover">
@@ -40,7 +44,7 @@
                     <th>結束日期</th>
                     <th>半天</th>
                     <th>原因</th>
-                    <th>收據</th>
+                    <th>證明</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -54,7 +58,7 @@
                     <td>{{ record.reason or '無' }}</td>
                     <td>
                         {% if record.receipt_url %}
-                            <img src="{{ record.receipt_url }}" alt="收據圖片" style="max-width: 100px; max-height: 100px; margin-top: 10px;">
+                            <img src="{{ record.receipt_url }}" alt="證明圖片" style="max-width: 100px; max-height: 100px; margin-top: 10px;">
                         {% else %}
                             無
                         {% endif %}
