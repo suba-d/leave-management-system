@@ -133,11 +133,10 @@
                 <td>{{ record.reason }}</td>
                 <td>
                     {% if record.receipt_url %}
-                        {% set drive_image_url = record.receipt_url.replace('file/d/', 'uc?export=view&id=').replace('/view', '') %}
-                        <img src="{{ drive_image_url }}" alt="證明圖片" style="max-width: 100px; max-height: 100px;">
-                    {% else %}
-                        無收據
-                    {% endif %}
+                    <img src="{{ record.receipt_url }}" alt="證明圖片" style="max-width: 100px; max-height: 100px;">
+                {% else %}
+                    無收據
+                {% endif %}
                 </td>
             </tr>
             {% endfor %}

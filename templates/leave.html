@@ -170,6 +170,13 @@
             <button type="submit">提交</button>
         </form>
 
+        {% if receipt_url %}
+            <div>
+                <h3>上傳的收據</h3>
+                <img src="{{ receipt_url }}" alt="Receipt Image" style="max-width: 100%; height: auto;">
+            </div>
+        {% endif %}
+
         <div class="link">
             <a href="{{ url_for('base') }}">前往我的頁面</a>
             <br>

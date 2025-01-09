@@ -72,14 +72,19 @@ def calculate_half_day_leave_days(start_date_str, end_date_str, is_half_day):
 
 def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
     try:
+        import mimetypes
+        mimetype, _ = mimetypes.guess_type(file_path)
+
+        # 設定文件的基本元數據
         file_metadata = {'name': file_name}
         if parent_folder_id:
             file_metadata['parents'] = [parent_folder_id]
 
-        media = MediaFileUpload(file_path, mimetype='application/pdf')
+        # 上傳文件到 Google Drive
+        media = MediaFileUpload(file_path, mimetype=mimetype or 'application/octet-stream')
         uploaded_file = drive_service.files().create(
-            body=file_metadata, 
-            media_body=media, 
+            body=file_metadata,
+            media_body=media,
             fields='id'
         ).execute()
 
@@ -89,7 +94,9 @@ def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
             body={'role': 'reader', 'type': 'anyone'}
         ).execute()
 
+        # 返回標準的分享 URL
         return f"https://drive.google.com/thumbnail?id={uploaded_file['id']}"
+
     except Exception as e:
         logging.error(f"Error uploading file to Google Drive: {e}")
         return None
@@ -301,6 +308,7 @@ def create_app():
     @app.route('/leave', methods=['GET', 'POST'])
     @login_required
     def leave():
+        receipt_url = None
         if request.method == 'POST':
             leave_type = request.form['leave_type']
             start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d')
@@ -312,12 +320,15 @@ def create_app():
 
             # 上傳收據處理
             if receipt:
-                filename = secure_filename(receipt.filename)
-                file_path = os.path.join('/tmp', filename)
-                receipt.save(file_path)
-                receipt_url = upload_to_google_drive(file_path, filename)
-                os.remove(file_path)  # 上傳後刪除臨時文件
+                 filename = secure_filename(receipt.filename)
+                 file_path = os.path.join('/tmp', filename)
+                 receipt.save(file_path)
+                 receipt_url = upload_to_google_drive(file_path, filename)
+                 os.remove(file_path)  # 刪除臨時文件
 
+                 if not receipt_url:
+                     flash('上傳收據失敗', 'warning')
+                     return redirect(url_for('leave'))
             # 檢查開始日期不能比結束日期晚
             if start_date > end_date:
                 flash('開始日期不能比結束日期晚', 'danger')
@@ -383,7 +394,7 @@ def create_app():
 
             return redirect(url_for('leave'))
 
-        return render_template('leave.html',username=current_user.username)
+        return render_template('leave.html', username=current_user.username, receipt_url=receipt_url)
 
     @app.route('/update_user/<int:user_id>', methods=['POST'])
     @login_required
