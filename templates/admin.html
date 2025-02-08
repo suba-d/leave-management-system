@@ -41,6 +41,12 @@
             width: auto;
             display: inline-block;
         }
+        .record-list img {
+            max-width: 100px;  /* 限制圖片最大寬度 */
+            height: auto;      /* 保持圖片比例 */
+            margin: 5px;      /* 添加一些邊距 */
+            cursor: pointer;   /* 滑鼠移過時顯示手型指標 */
+        }
     </style>
     <script>
         function toggleRecords(userId) {
@@ -55,6 +61,11 @@
             } else {
                 input.setCustomValidity('請輸入整數或以 .5 結尾的小數');
             }
+        }
+
+        // 添加圖片點擊放大功能
+        function openImageInNewTab(url) {
+            window.open(url, '_blank');
         }
     </script>
 </head>
@@ -142,9 +153,10 @@
                                     ({{ record.reason }})
                                     {% endif %}
                                     {% if record.receipt_url %}
-                                    <img src="{{ record.receipt_url }}" alt="證明圖片" style="max-width: 100px; max-height: 100px;">
-                                    {% else %}
-                                    無證明
+                                    <a href="{{ record.receipt_url }}" 
+                                       target="_blank">
+                                       查看證明圖片
+                                    </a>
                                     {% endif %}
                                     <form action="{{ url_for('delete_leave', leave_id=record.id) }}" method="POST" style="display:inline;">
                                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>

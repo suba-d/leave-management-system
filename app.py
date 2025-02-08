@@ -95,7 +95,7 @@ def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
         ).execute()
 
         # 返回標準的分享 URL
-        return f"https://drive.google.com/thumbnail?id={uploaded_file['id']}"
+        return f"https://drive.google.com/uc?export=view&id={uploaded_file['id']}"
 
     except Exception as e:
         logging.error(f"Error uploading file to Google Drive: {e}")
