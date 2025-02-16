@@ -363,15 +363,31 @@ def create_app():
 
             # 上傳收據處理
             if receipt:
-                 filename = secure_filename(receipt.filename)
-                 file_path = os.path.join('/tmp', filename)
-                 receipt.save(file_path)
-                 receipt_url = upload_to_google_drive(file_path, filename)
-                 os.remove(file_path)  # 刪除臨時文件
+                try:
+                    filename = secure_filename(receipt.filename)
+                    # 確保臨時文件夾存在
+                    tmp_dir = '/tmp'
+                    if not os.path.exists(tmp_dir):
+                        os.makedirs(tmp_dir)
+                    
+                    file_path = os.path.join(tmp_dir, filename)
+                    receipt.save(file_path)
+                    
+                    receipt_url = upload_to_google_drive(file_path, filename)
+                    
+                    # 只在文件存在時才嘗試刪除
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
 
-                 if not receipt_url:
-                     flash('上傳收據失敗', 'warning')
-                     return redirect(url_for('leave'))
+                    if not receipt_url:
+                        flash('上傳收據失敗', 'warning')
+                        return redirect(url_for('leave'))
+                    
+                except Exception as e:
+                    logging.error(f"File upload error: {e}")
+                    flash('檔案上傳過程發生錯誤', 'danger')
+                    return redirect(url_for('leave'))
+
             # 檢查開始日期不能比結束日期晚
             if start_date > end_date:
                 flash('開始日期不能比結束日期晚', 'danger')
