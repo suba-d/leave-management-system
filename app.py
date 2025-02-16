@@ -349,7 +349,15 @@ def create_app():
             start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d')
             end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
             half_day = 'half_day' in request.form
-            reason = request.form.get('reason', '')
+            reason = request.form.get('reason', '').strip()  # 使用 strip() 去除空白
+            
+            # 如果是半天假，一定會加上"半天"標記
+            if half_day:
+                if not reason:  # 如果沒有填寫備註
+                    reason = "半天"
+                elif not reason.startswith("半天"):  # 如果有填寫備註但沒有"半天"開頭
+                    reason = f"半天 - {reason}"
+            
             receipt = request.files.get('receipt')
             receipt_url = None
 
