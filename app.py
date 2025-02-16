@@ -8,8 +8,11 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.service_account import Credentials
 import os
+import boto3
+import json
 from werkzeug.utils import secure_filename
 import logging
+from botocore.exceptions import ClientError
 
 # models.py 裏頭只定義: db = SQLAlchemy() + (User, LeaveRecord)
 # 這裡直接 from models import db, User, LeaveRecord
@@ -102,13 +105,45 @@ def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
         return None
 
 
+def get_rds_credentials():
+    secret_name = "rds!db-6505dd7b-6e58-4b77-b54a-bae7b407167b"
+    region_name = "ap-northeast-1"
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+        return json.loads(get_secret_value_response['SecretString'])
+    except ClientError as e:
+        logging.error(f"❌ 無法從 Secrets Manager 獲取密碼: {e}")
+        raise e
+
+
 def create_app():
     """
     建立並回傳 Flask 應用程式 (採用應用工廠模式)
     """
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'your_secret_key'  # 請替換為更安全的 key
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:26322655@localhost/leave_system'
+    app.config['SECRET_KEY'] = '26322655'  # 使用您自己的密鑰，這裡我用您之前用過的數字作為示例
+
+    # 取得 RDS 密碼
+    rds_secret = get_rds_credentials()
+    if not rds_secret:
+        raise Exception("❌ 無法取得 RDS 資訊，請檢查 Secrets Manager 設定")
+
+    # 設定 SQLAlchemy 連線字串
+    DB_HOST = "leavedb.cv6m4ssak23j.ap-northeast-1.rds.amazonaws.com"
+    DB_NAME = "leave_system"
+    DB_USERNAME = rds_secret["username"]
+    DB_PASSWORD = rds_secret["password"]
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 1. 初始化 db
