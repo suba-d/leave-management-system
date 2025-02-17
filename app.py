@@ -394,7 +394,7 @@ def create_app():
                 flash('開始日期不能比結束日期晚', 'danger')
                 return redirect(url_for('leave'))
             
-            max_allowed_date = datetime.now().date() + timedelta(days=60)  # 允許未來 60 天
+            max_allowed_date = datetime.now() + timedelta(days=60)  # 允許未來 60 天
             if start_date > max_allowed_date or end_date > max_allowed_date:
                 flash('請假日期不可超過 60 天', 'danger')
                 return redirect(url_for('leave'))
