@@ -18,13 +18,15 @@ class User(db.Model, UserMixin):
 
 # 建立 LeaveRecord 模型
 class LeaveRecord(db.Model):
-    __tablename__ = 'leave_record'   # 可選，不寫的話預設表名會是 leave_record
+    __tablename__ = 'leave_record'
+    __table_args__ = {'mysql_charset': 'utf8mb4', 'mysql_collate': 'utf8mb4_unicode_ci'}
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     leave_type = db.Column(db.String(50))  
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     half_day = db.Column(db.Boolean, default=False)
-    reason = db.Column(db.String(255))  # 確保模型中定義了 reason 欄位
-    receipt_url = db.Column(db.String(500))  # 新增收據URL字段
-    days = db.Column(db.Float, nullable=False)  # 假設這個屬性表示請假天數
+    reason = db.Column(db.String(255))
+    receipt_url = db.Column(db.String(500))
+    days = db.Column(db.Float, nullable=False)

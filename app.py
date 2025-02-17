@@ -21,6 +21,7 @@ from models import db, User, LeaveRecord
 # forms.py 如果你真的有用 WTForms，就 import；若沒用到可移除
 from forms import LoginForm  # 看你實際需求
 
+
 SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/calendar'
@@ -143,7 +144,7 @@ def create_app():
     DB_USERNAME = rds_secret["username"]
     DB_PASSWORD = rds_secret["password"]
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}?charset=utf8mb4"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 1. 初始化 db
@@ -392,12 +393,22 @@ def create_app():
             if start_date > end_date:
                 flash('開始日期不能比結束日期晚', 'danger')
                 return redirect(url_for('leave'))
+            
+            max_allowed_year = datetime.now().year + 1  # 例如只允許 1 年內的請假
+            if start_date.year > max_allowed_year or end_date.year > max_allowed_year:
+               flash('請假日期不可超過 1 年後', 'danger')
+               return redirect(url_for('leave'))
 
             # 計算請假天數
             delta = end_date - start_date
             days = delta.days + 1  # 包含開始日期和結束日期
             if half_day:
                 days -= 0.5
+            
+            max_leave_days = 5
+            if days > max_leave_days:
+                flash(f'單次請假天數不可超過 {max_leave_days} 天', 'danger')
+                return redirect(url_for('leave'))
 
             # 檢查剩餘天數是否足夠
             leave_days_mapping = {
