@@ -52,12 +52,14 @@
             toggleHalfDayAvailability();
         }
 
-        // 綁定事件
-        document.getElementById("leave_type").addEventListener("change", () => handleFormBehavior());
-        document.querySelector("form").addEventListener("submit", (event) => handleFormBehavior(event));
-        window.addEventListener("DOMContentLoaded", () => {
+        // 將所有事件綁定和初始化移到 DOMContentLoaded 事件內
+        document.addEventListener("DOMContentLoaded", function() {
+            // 綁定事件
+            document.getElementById("leave_type").addEventListener("change", () => handleFormBehavior());
+            document.querySelector("form").addEventListener("submit", (event) => handleFormBehavior(event));
+            
+            // 初始化表單狀態
             handleFormBehavior();
-            toggleHalfDayAvailability(); // 確保在頁面載入時就執行此函數
         });
     </script>
     <style>
@@ -152,7 +154,7 @@
             <input type="date" id="end_date" name="end_date" required>
 
             <label for="leave_type">請假類型:</label>
-            <select id="leave_type" name="leave_type" required onchange="handleFormBehavior()">
+            <select id="leave_type" name="leave_type" required>
                 <option value="特休">特休</option>
                 <option value="病假">病假</option>
                 <option value="事假">事假</option>
