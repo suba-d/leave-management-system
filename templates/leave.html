@@ -55,7 +55,10 @@
         // 綁定事件
         document.getElementById("leave_type").addEventListener("change", () => handleFormBehavior());
         document.querySelector("form").addEventListener("submit", (event) => handleFormBehavior(event));
-        window.addEventListener("DOMContentLoaded", () => handleFormBehavior());
+        window.addEventListener("DOMContentLoaded", () => {
+            handleFormBehavior();
+            toggleHalfDayAvailability(); // 確保在頁面載入時就執行此函數
+        });
     </script>
     <style>
         body {
