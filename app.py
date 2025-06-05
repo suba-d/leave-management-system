@@ -106,7 +106,7 @@ def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
         return None
 
 
-def get_rds_credentials():
+#def get_rds_credentials():
     secret_name = "rds!db-6505dd7b-6e58-4b77-b54a-bae7b407167b"
     region_name = "ap-northeast-1"
 
@@ -132,11 +132,6 @@ def create_app():
     """
     app = Flask(__name__)
     app.config['SECRET_KEY'] = '26322655'  # 使用您自己的密鑰，這裡我用您之前用過的數字作為示例
-
-    # 取得 RDS 密碼
-    rds_secret = get_rds_credentials()
-    if not rds_secret:
-        raise Exception("❌ 無法取得 RDS 資訊，請檢查 Secrets Manager 設定")
 
     # 設定 SQLAlchemy 連線字串
     DB_HOST = "leavedb.cv6m4ssak23j.ap-northeast-1.rds.amazonaws.com"
