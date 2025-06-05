@@ -141,10 +141,12 @@ def create_app():
     # 設定 SQLAlchemy 連線字串
     DB_HOST = "leavedb.cv6m4ssak23j.ap-northeast-1.rds.amazonaws.com"
     DB_NAME = "leave_system"
-    DB_USERNAME = rds_secret["username"]
-    DB_PASSWORD = rds_secret["password"]
+    DB_USERNAME = "admin"
+    DB_PASSWORD = "Keira0417"
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}?charset=utf8mb4"
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}?charset=utf8mb4"
+    )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 1. 初始化 db
