@@ -1,0 +1,12 @@
+name: 我的第一個CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 打個招呼
+        run: echo "Hello from GitHub Actions!"
