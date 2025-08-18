@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-if [ -z "$1"]; then
+if [ -z "$1" ]; then
     echo "錯誤：需要提供commit message"
-    echo "用法：./depoly.sh\"你的更新說名\""
+    echo "用法：./depoly.sh\"你的更新說明\""
     exit 1
 fi
 
