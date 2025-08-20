@@ -49,16 +49,29 @@ class GoogleService:
             calendar_id = current_app.config['GOOGLE_CALENDAR_ID']
         
         try:
-            # 確保日期包含時間信息
+            # 處理日期格式 - 使用全天事件格式
             if isinstance(start_date, str):
-                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                start_date_str = start_date
+            else:
+                start_date_str = start_date.strftime('%Y-%m-%d')
+            
             if isinstance(end_date, str):
-                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                end_date_str = end_date
+            else:
+                end_date_str = end_date.strftime('%Y-%m-%d')
+            
+            # 如果是請假，通常是全天事件，使用 date 而不是 dateTime
+            # 結束日期需要加一天（Google Calendar 全天事件的結束日期是不包含的）
+            from datetime import datetime, timedelta
+            end_date_obj = datetime.strptime(end_date_str, '%Y-%m-%d')
+            end_date_obj += timedelta(days=1)
+            end_date_str = end_date_obj.strftime('%Y-%m-%d')
             
             event = {
                 'summary': summary,
-                'start': {'dateTime': start_date.isoformat() + 'Z'},
-                'end': {'dateTime': end_date.isoformat() + 'Z'},
+                'start': {'date': start_date_str},
+                'end': {'date': end_date_str},
+                'description': f'請假申請 - {summary}'
             }
             
             current_app.logger.debug(f"Creating calendar event: {event}")
