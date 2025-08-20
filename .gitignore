@@ -1,1 +1,125 @@
+# 敏感資料和憑證
 credentials.json
+*.key
+*.pem
+.env
+.env.local
+.env.production
+.env.staging
+
+# Python 相關
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虛擬環境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# 日誌檔案
+logs/
+*.log
+
+# 資料庫檔案
+*.db
+*.sqlite
+*.sqlite3
+
+# macOS 系統檔案
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows 系統檔案
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux 系統檔案
+*~
+
+# 臨時檔案
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 測試覆蓋率報告
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Flask 實例資料夾
+instance/
+
+# 上傳檔案
+uploads/
+
+# 備份檔案
+*_original.py
+*_backup.*
+*.bak
+*.backup
+
+# 測試檔案（除非需要版本控制）
+test_app.py
+*Test.py
+calanderTest.py
+
+# 編輯器暫存檔
+*.save
+*.orig
+
+# 壓縮檔案
+*.zip
+*.tar.gz
+*.rar
+
+# 文檔生成檔案
+docs/_build/
+
+# 本地配置檔案
+local_settings.py
