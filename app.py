@@ -14,14 +14,9 @@ from werkzeug.utils import secure_filename
 import logging
 from botocore.exceptions import ClientError
 
-# models.py 裏頭只定義: db = SQLAlchemy() + (User, LeaveRecord)
-# 這裡直接 from models import db, User, LeaveRecord
 from models import db, User, LeaveRecord
 
-# forms.py 如果你真的有用 WTForms，就 import；若沒用到可移除
-from forms import LoginForm  # 看你實際需求
-
-
+# 常數定義
 SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/calendar'
@@ -29,6 +24,18 @@ SCOPES = [
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'credentials.json')
+
+# 請假限制常數
+MAX_LEAVE_DAYS = 5
+MAX_FUTURE_DAYS = 60
+DEFAULT_LEAVE_DAYS = {
+    'annual_leave': 10,
+    'sick_leave': 5,
+    'personal_leave': 14,
+    'menstrual_leave': 5,
+    'family_care_leave': 7,
+    'compassionate_leave': 3
+}
 
 try:
     creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
@@ -56,6 +63,16 @@ def create_calendar_event(summary, start_date, end_date, calendar_id='c_5a040282
         return None
 
 
+# 請假類型映射
+LEAVE_TYPE_MAPPING = {
+    '特休': 'vacation_days',
+    '病假': 'sick_days',
+    '事假': 'personal_days',
+    '生理假': 'menstrual_days',
+    '家庭照顧假': 'family_care_days',
+    '同情假': 'compassionate_days',
+}
+
 def calculate_half_day_leave_days(start_date_str, end_date_str, is_half_day):
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
@@ -72,6 +89,84 @@ def calculate_half_day_leave_days(start_date_str, end_date_str, is_half_day):
     if is_half_day:
         leave_days -= 0.5
     return leave_days
+
+def calculate_annual_leave_stats(leave_records, current_year):
+    """計算年度請假統計"""
+    stats = {
+        'annual_leave_days': 0,
+        'sick_leave_days': 0,
+        'personal_leave_days': 0,
+        'menstrual_leave_days': 0,
+        'family_care_leave_days': 0,
+        'compassionate_leave_days': 0
+    }
+    
+    for record in leave_records:
+        if record.start_date.year == current_year:
+            if record.leave_type == '特休':
+                stats['annual_leave_days'] += record.days
+            elif record.leave_type == '病假':
+                stats['sick_leave_days'] += record.days
+            elif record.leave_type == '事假':
+                stats['personal_leave_days'] += record.days
+            elif record.leave_type == '生理假':
+                stats['menstrual_leave_days'] += record.days
+            elif record.leave_type == '家庭照顧假':
+                stats['family_care_leave_days'] += record.days
+            elif record.leave_type == '同情假':
+                stats['compassionate_leave_days'] += record.days
+    
+    return stats
+
+def validate_leave_request(start_date, end_date, days, leave_type, current_user):
+    """驗證請假申請"""
+    # 檢查開始日期不能比結束日期晚
+    if start_date > end_date:
+        return False, '開始日期不能比結束日期晚'
+    
+    # 檢查未來日期限制
+    max_allowed_date = datetime.now() + timedelta(days=MAX_FUTURE_DAYS)
+    if start_date > max_allowed_date or end_date > max_allowed_date:
+        return False, f'請假日期不可超過 {MAX_FUTURE_DAYS} 天'
+    
+    # 檢查單次請假天數限制
+    if days > MAX_LEAVE_DAYS:
+        return False, f'單次請假天數不可超過 {MAX_LEAVE_DAYS} 天'
+    
+    # 檢查剩餘天數是否足夠
+    if leave_type in LEAVE_TYPE_MAPPING:
+        remaining_days = getattr(current_user, LEAVE_TYPE_MAPPING[leave_type])
+        if days > remaining_days:
+            return False, f'{leave_type} 剩餘天數不足'
+    else:
+        return False, '未知的請假類型'
+    
+    return True, ''
+
+def process_receipt_upload(receipt):
+    """處理收據上傳"""
+    if not receipt:
+        return None
+    
+    try:
+        filename = secure_filename(receipt.filename)
+        tmp_dir = '/tmp'
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
+        
+        file_path = os.path.join(tmp_dir, filename)
+        receipt.save(file_path)
+        
+        receipt_url = upload_to_google_drive(file_path, filename)
+        
+        # 清理臨時文件
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        return receipt_url
+    except Exception as e:
+        logging.error(f"File upload error: {e}")
+        raise Exception('檔案上傳過程發生錯誤')
 
 
 def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
@@ -106,24 +201,6 @@ def upload_to_google_drive(file_path, file_name, parent_folder_id=None):
         return None
 
 
-#def get_rds_credentials():
-    secret_name = "rds!db-6505dd7b-6e58-4b77-b54a-bae7b407167b"
-    region_name = "ap-northeast-1"
-
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-        return json.loads(get_secret_value_response['SecretString'])
-    except ClientError as e:
-        logging.error(f"❌ 無法從 Secrets Manager 獲取密碼: {e}")
-        raise e
 
 
 def create_app():
@@ -212,61 +289,26 @@ def create_app():
         user = User.query.get(user_id)
         leave_records = LeaveRecord.query.filter_by(user_id=user_id).all()
 
-        # 計算每年度的請假紀錄統計
+        # 計算年度請假統計
         current_year = datetime.now().year
-        annual_leave_days = 0
-        sick_leave_days = 0
-        personal_leave_days=0
-        menstrual_leave_days=0
-        family_care_leave_days=0
-        compassionate_leave_days=0
+        stats = calculate_annual_leave_stats(leave_records, current_year)
 
-        for record in leave_records:
-            if record.start_date.year == current_year:
-                if record.leave_type == '特休':
-                    annual_leave_days += record.days
-                elif record.leave_type == '病假':
-                    sick_leave_days += record.days
-                elif record.leave_type == '事假':
-                    personal_leave_days += record.days
-                elif record.leave_type == '生理假':
-                    menstrual_leave_days += record.days
-                elif record.leave_type == '家庭照顧假':
-                    family_care_leave_days += record.days
-                elif record.leave_type == '同情假':
-                    compassionate_leave_days += record.days            
-
-        return render_template('user_records.html', user=user, leave_records=leave_records, 
-                       annual_leave_days=annual_leave_days, sick_leave_days=sick_leave_days,personal_leave_days=personal_leave_days,menstrual_leave_days=menstrual_leave_days,family_care_leave_days=family_care_leave_days,compassionate_leave_days=compassionate_leave_days ,current_year=current_year)
+        return render_template('user_records.html', 
+                             user=user, 
+                             leave_records=leave_records, 
+                             current_year=current_year,
+                             **stats)
 
     @app.route('/base', methods=['GET'])
     @login_required
     def base():
         # 取得當前使用者請假紀錄
-        
         leave_records = LeaveRecord.query.filter_by(user_id=current_user.id).all()
-        # 計算每年度的請假紀錄統計
+        
+        # 計算年度請假統計
         current_year = datetime.now().year
-        annual_leave_days = 0
-        sick_leave_days = 0
-        personal_leave_days=0
-        menstrual_leave_days=0
-        family_care_leave_days=0
-        compassionate_leave_days=0
-        for record in leave_records:
-            if record.start_date.year == current_year:
-                if record.leave_type == '特休':
-                    annual_leave_days += record.days
-                elif record.leave_type == '病假':
-                    sick_leave_days += record.days
-                elif record.leave_type == '事假':
-                    personal_leave_days += record.days
-                elif record.leave_type == '生理假':
-                    menstrual_leave_days += record.days
-                elif record.leave_type == '家庭照顧假':
-                    family_care_leave_days += record.days
-                elif record.leave_type == '同情假':
-                    compassionate_leave_days += record.days        
+        stats = calculate_annual_leave_stats(leave_records, current_year)
+        
         return render_template(
             'base.html',
             username=current_user.username,
@@ -277,13 +319,8 @@ def create_app():
             family_care_days=current_user.family_care_days,
             compassionate_days=current_user.compassionate_days,
             leave_records=leave_records,
-            annual_leave_days=annual_leave_days,
             current_year=current_year,
-            sick_leave_days=sick_leave_days,
-            personal_leave_days=personal_leave_days,
-            menstrual_leave_days=menstrual_leave_days,
-            family_care_leave_days=family_care_leave_days,
-            compassionate_leave_days=compassionate_leave_days
+            **stats
         )
 
     @app.route('/add_user', methods=['POST'])
@@ -295,12 +332,12 @@ def create_app():
         username = request.form['username'].lower()
         username = username.capitalize()  # 第一個字母大寫，其餘字母小寫
         password = request.form['password']
-        annual_leave = 10
-        sick_leave = 5
-        personal_leave = 14
-        menstrual_leave = 5
-        family_care_leave = 7
-        compassionate_leave = 3
+        annual_leave = DEFAULT_LEAVE_DAYS['annual_leave']
+        sick_leave = DEFAULT_LEAVE_DAYS['sick_leave']
+        personal_leave = DEFAULT_LEAVE_DAYS['personal_leave']
+        menstrual_leave = DEFAULT_LEAVE_DAYS['menstrual_leave']
+        family_care_leave = DEFAULT_LEAVE_DAYS['family_care_leave']
+        compassionate_leave = DEFAULT_LEAVE_DAYS['compassionate_leave']
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
@@ -347,86 +384,42 @@ def create_app():
             start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d')
             end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
             half_day = 'half_day' in request.form
-            reason = request.form.get('reason', '').strip()  # 使用 strip() 去除空白
+            reason = request.form.get('reason', '').strip()
             
-            # 如果是半天假，一定會加上"半天"標記
+            # 處理半天假備註
             if half_day:
-                if not reason:  # 如果沒有填寫備註
+                if not reason:
                     reason = "半天"
-                elif not reason.startswith("半天"):  # 如果有填寫備註但沒有"半天"開頭
+                elif not reason.startswith("半天"):
                     reason = f"半天 - {reason}"
             
-            receipt = request.files.get('receipt')
-            receipt_url = None
-
-            # 上傳收據處理
-            if receipt:
-                try:
-                    filename = secure_filename(receipt.filename)
-                    # 確保臨時文件夾存在
-                    tmp_dir = '/tmp'
-                    if not os.path.exists(tmp_dir):
-                        os.makedirs(tmp_dir)
-                    
-                    file_path = os.path.join(tmp_dir, filename)
-                    receipt.save(file_path)
-                    
-                    receipt_url = upload_to_google_drive(file_path, filename)
-                    
-                    # 只在文件存在時才嘗試刪除
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-
-                    if not receipt_url:
-                        flash('上傳收據失敗', 'warning')
-                        return redirect(url_for('leave'))
-                    
-                except Exception as e:
-                    logging.error(f"File upload error: {e}")
-                    flash('檔案上傳過程發生錯誤', 'danger')
-                    return redirect(url_for('leave'))
-
-            # 檢查開始日期不能比結束日期晚
-            if start_date > end_date:
-                flash('開始日期不能比結束日期晚', 'danger')
-                return redirect(url_for('leave'))
-            
-            max_allowed_date = datetime.now() + timedelta(days=60)  # 允許未來 60 天
-            if start_date > max_allowed_date or end_date > max_allowed_date:
-                flash('請假日期不可超過 60 天', 'danger')
-                return redirect(url_for('leave'))
-
             # 計算請假天數
             delta = end_date - start_date
-            days = delta.days + 1  # 包含開始日期和結束日期
+            days = delta.days + 1
             if half_day:
                 days -= 0.5
             
-            max_leave_days = 5
-            if days > max_leave_days:
-                flash(f'單次請假天數不可超過 {max_leave_days} 天', 'danger')
+            # 驗證請假申請
+            is_valid, error_message = validate_leave_request(start_date, end_date, days, leave_type, current_user)
+            if not is_valid:
+                flash(error_message, 'danger')
+                return redirect(url_for('leave'))
+            
+            # 處理收據上傳
+            receipt = request.files.get('receipt')
+            try:
+                receipt_url = process_receipt_upload(receipt)
+            except Exception as e:
+                flash(str(e), 'danger')
+                return redirect(url_for('leave'))
+            
+            if receipt and not receipt_url:
+                flash('上傳收據失敗', 'warning')
                 return redirect(url_for('leave'))
 
-            # 檢查剩餘天數是否足夠
-            leave_days_mapping = {
-                '特休': 'vacation_days',
-                '病假': 'sick_days',
-                '事假': 'personal_days',
-                '生理假': 'menstrual_days',
-                '家庭照顧假': 'family_care_days',
-                '同情假': 'compassionate_days',
-            }
-            if leave_type in leave_days_mapping:
-                remaining_days = getattr(current_user, leave_days_mapping[leave_type])
-                if days > remaining_days:
-                    flash(f'{leave_type} 剩餘天數不足', 'danger')
-                    return redirect(url_for('leave'))
-
-            # 更新使用者的特休或病假天數
-                setattr(current_user, leave_days_mapping[leave_type], remaining_days - days)
-            else:
-                flash('未知的請假類型', 'danger')
-                return redirect(url_for('leave'))
+            # 更新使用者的請假天數
+            remaining_days = getattr(current_user, LEAVE_TYPE_MAPPING[leave_type])
+            setattr(current_user, LEAVE_TYPE_MAPPING[leave_type], remaining_days - days)
 
             # 新增請假記錄
             leave_record = LeaveRecord(
@@ -471,20 +464,20 @@ def create_app():
 
         annual_leave = request.form['annual_leave']
         sick_leave = request.form['sick_leave']
-        personal_leave=request.form['personal_leave']
-        menstrual_leave=request.form['menstrual_leave']
-        family_care_leave=request.form['family_care_leave']
-        compassionate_leave=request.form['compassionate_leave']
+        personal_leave = request.form['personal_leave']
+        menstrual_leave = request.form['menstrual_leave']
+        family_care_leave = request.form['family_care_leave']
+        compassionate_leave = request.form['compassionate_leave']
         
 
         user = User.query.get(user_id)
         if user:
             user.vacation_days = annual_leave
             user.sick_days = sick_leave
-            user.personal_days=personal_leave
-            user.menstrual_days=menstrual_leave
-            user.family_care_days=family_care_leave
-            user.compassionate_days=compassionate_leave
+            user.personal_days = personal_leave
+            user.menstrual_days = menstrual_leave
+            user.family_care_days = family_care_leave
+            user.compassionate_days = compassionate_leave
             db.session.commit()
             flash('用戶天數更新成功', 'success')
         else:
