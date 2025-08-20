@@ -150,7 +150,7 @@
             margin-bottom: 0.5rem;
         }
 
-        .form-control {
+        .form-input {
             width: 100%;
             padding: 0.75rem 1rem;
             background: var(--secondary-bg);
@@ -161,11 +161,10 @@
             transition: all 0.3s ease;
         }
 
-        .form-control:focus {
+        .form-input:focus {
             outline: none;
             border-color: var(--accent-color);
             box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn {
@@ -199,8 +198,6 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            text-decoration: none;
         }
 
         .btn-danger {
@@ -218,28 +215,26 @@
             font-size: 0.8rem;
         }
 
-        .table {
+        .users-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
-            color: var(--text-primary);
         }
 
-        .table th,
-        .table td {
+        .users-table th,
+        .users-table td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
         }
 
-        .table th {
+        .users-table th {
             font-weight: 600;
             color: var(--accent-color);
             background: rgba(0, 212, 255, 0.1);
         }
 
-        .table tr:hover {
+        .users-table tr:hover {
             background: rgba(255, 255, 255, 0.05);
         }
 
@@ -270,6 +265,67 @@
             margin-top: 0.25rem;
         }
 
+        .recent-records {
+            margin-top: 2rem;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .record-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .record-info {
+            flex: 1;
+        }
+
+        .record-user {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .record-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .record-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success-color);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-pending {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning-color);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
         .alert {
             padding: 1rem;
             border-radius: 12px;
@@ -289,34 +345,6 @@
             color: #ffcdd2;
         }
 
-        .alert-warning {
-            background: rgba(255, 170, 0, 0.15);
-            border: 1px solid rgba(255, 170, 0, 0.3);
-            color: #ffe0b2;
-        }
-
-        .alert-info {
-            background: rgba(0, 212, 255, 0.15);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            color: #b3e5fc;
-        }
-
-        /* 編輯表單樣式 */
-        .edit-form {
-            background: var(--secondary-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            margin-top: 1rem;
-        }
-
-        .edit-form .row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
         /* 響應式設計 */
         @media (max-width: 1024px) {
             .dashboard-grid {
@@ -333,12 +361,12 @@
         }
 
         @media (max-width: 768px) {
-            .table {
+            .users-table {
                 font-size: 0.9rem;
             }
             
-            .table th,
-            .table td {
+            .users-table th,
+            .users-table td {
                 padding: 0.75rem 0.5rem;
             }
             
@@ -384,14 +412,14 @@
                     <i class="fas fa-user-plus"></i>
                     新增用戶
                 </h2>
-                <form action="{{ url_for('admin.add_user') }}" method="POST" class="mb-4">
+                <form action="{{ url_for('admin.add_user') }}" method="POST">
                     <div class="form-group">
                         <label for="username" class="form-label">用戶名</label>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="請輸入用戶名" required>
+                        <input type="text" class="form-input" id="username" name="username" placeholder="請輸入用戶名" required>
                     </div>
                     <div class="form-group">
                         <label for="password" class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="請輸入密碼" required>
+                        <input type="password" class="form-input" id="password" name="password" placeholder="請輸入密碼" required>
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">
                         <i class="fas fa-plus"></i>
@@ -412,29 +440,25 @@
                         <div class="stat-label">總用戶數</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value">{{ leave_records|length if leave_records else 0 }}</div>
-                        <div class="stat-label">請假記錄</div>
+                        <div class="stat-value">{{ leave_records|length }}</div>
+                        <div class="stat-label">近期請假</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">{{ (users|selectattr('vacation_days', 'lt', 5)|list)|length }}</div>
                         <div class="stat-label">年假不足</div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ (users|selectattr('sick_days', 'lt', 3)|list)|length }}</div>
-                        <div class="stat-label">病假不足</div>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 用戶管理列表 -->
+        <!-- 用戶列表 -->
         <div class="card">
             <h2 class="card-title">
                 <i class="fas fa-users"></i>
                 用戶管理
             </h2>
             {% if users %}
-            <table class="table">
+            <table class="users-table">
                 <thead>
                     <tr>
                         <th>用戶名</th>
@@ -460,7 +484,7 @@
                         <td>{{ user.family_care_days }}</td>
                         <td>{{ user.compassionate_days }}</td>
                         <td>
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 0.5rem;">
                                 <a href="{{ url_for('leave.user_records', user_id=user.id) }}" class="btn btn-primary btn-sm">
                                     <i class="fas fa-eye"></i>
                                     查看
@@ -479,63 +503,92 @@
                     <!-- 編輯表單（隱藏） -->
                     <tr id="edit-{{ user.id }}" style="display: none;">
                         <td colspan="8">
-                            <div class="edit-form">
-                                <h4 style="margin-bottom: 1rem; color: var(--text-primary);">
-                                    <i class="fas fa-edit"></i>
-                                    編輯 {{ user.username }} 的假期天數
-                                </h4>
-                                <form action="{{ url_for('admin.update_user', user_id=user.id) }}" method="POST">
-                                    <div class="row">
-                                        <div>
-                                            <label class="form-label">年假</label>
-                                            <input type="number" class="form-control" name="annual_leave" value="{{ user.vacation_days }}" step="0.5" min="0">
-                                        </div>
-                                        <div>
-                                            <label class="form-label">病假</label>
-                                            <input type="number" class="form-control" name="sick_leave" value="{{ user.sick_days }}" step="0.5" min="0">
-                                        </div>
-                                        <div>
-                                            <label class="form-label">事假</label>
-                                            <input type="number" class="form-control" name="personal_leave" value="{{ user.personal_days }}" step="0.5" min="0">
-                                        </div>
-                                        <div>
-                                            <label class="form-label">生理假</label>
-                                            <input type="number" class="form-control" name="menstrual_leave" value="{{ user.menstrual_days }}" step="0.5" min="0">
-                                        </div>
-                                        <div>
-                                            <label class="form-label">家庭照顧假</label>
-                                            <input type="number" class="form-control" name="family_care_leave" value="{{ user.family_care_days }}" step="0.5" min="0">
-                                        </div>
-                                        <div>
-                                            <label class="form-label">喪假</label>
-                                            <input type="number" class="form-control" name="compassionate_leave" value="{{ user.compassionate_days }}" step="0.5" min="0">
-                                        </div>
+                            <form action="{{ url_for('admin.update_user', user_id=user.id) }}" method="POST" style="background: var(--secondary-bg); padding: 1rem; border-radius: 12px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                    <div>
+                                        <label class="form-label">年假</label>
+                                        <input type="number" class="form-input" name="annual_leave" value="{{ user.vacation_days }}" step="0.5" min="0">
                                     </div>
-                                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save"></i>
-                                            保存更改
-                                        </button>
-                                        <button type="button" class="btn btn-secondary" onclick="toggleEditForm({{ user.id }})">
-                                            <i class="fas fa-times"></i>
-                                            取消
-                                        </button>
+                                    <div>
+                                        <label class="form-label">病假</label>
+                                        <input type="number" class="form-input" name="sick_leave" value="{{ user.sick_days }}" step="0.5" min="0">
                                     </div>
-                                </form>
-                            </div>
+                                    <div>
+                                        <label class="form-label">事假</label>
+                                        <input type="number" class="form-input" name="personal_leave" value="{{ user.personal_days }}" step="0.5" min="0">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">生理假</label>
+                                        <input type="number" class="form-input" name="menstrual_leave" value="{{ user.menstrual_days }}" step="0.5" min="0">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">家庭照顧假</label>
+                                        <input type="number" class="form-input" name="family_care_leave" value="{{ user.family_care_days }}" step="0.5" min="0">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">喪假</label>
+                                        <input type="number" class="form-input" name="compassionate_leave" value="{{ user.compassionate_days }}" step="0.5" min="0">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>
+                                        保存
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="toggleEditForm({{ user.id }})">
+                                        <i class="fas fa-times"></i>
+                                        取消
+                                    </button>
+                                </div>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% else %}
-            <div style="text-align: center; color: var(--text-secondary); padding: 3rem;">
-                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                <h3>尚無用戶資料</h3>
-                <p>系統中還沒有任何用戶</p>
-            </div>
+            <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                <i class="fas fa-user-slash"></i>
+                尚無用戶資料
+            </p>
             {% endif %}
         </div>
+
+        <!-- 最近請假記錄 -->
+        {% if leave_records %}
+        <div class="card recent-records">
+            <h2 class="card-title">
+                <i class="fas fa-clock"></i>
+                最近請假記錄
+            </h2>
+            {% for record in leave_records %}
+            <div class="record-item">
+                <div class="record-info">
+                    <div class="record-user">{{ record.username if record.username else "Unknown" }}</div>
+                    <div class="record-details">
+                        {{ record.leave_type }} | {{ record.start_date.strftime('%Y-%m-%d') }} 
+                        {% if record.start_date != record.end_date %}
+                        至 {{ record.end_date.strftime('%Y-%m-%d') }}
+                        {% endif %}
+                        | {{ record.days }} 天
+                        {% if record.reason %}
+                        | {{ record.reason }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="record-actions">
+                    <form action="{{ url_for('leave.delete_leave', leave_id=record.id) }}" method="POST" style="display:inline;" 
+                          onsubmit="return confirm('確定要刪除這筆請假紀錄嗎？')">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i>
+                            刪除
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- 刪除確認模態框 -->
@@ -569,7 +622,7 @@
 
         function confirmDelete(userId, username) {
             document.getElementById('deleteUsername').textContent = username;
-            document.getElementById('deleteForm').action = '{{ url_for("admin.delete_user", user_id=0) }}'.replace('0', userId);
+            document.getElementById('deleteForm').action = '/admin/delete_user/' + userId;
             document.getElementById('deleteModal').style.display = 'flex';
         }
 
@@ -580,13 +633,6 @@
         // 點擊模態框外部關閉
         document.getElementById('deleteModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                closeDeleteModal();
-            }
-        });
-
-        // ESC 鍵關閉模態框
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
                 closeDeleteModal();
             }
         });

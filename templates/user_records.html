@@ -3,85 +3,548 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>使用者請假紀錄</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>{{ user.username }} 的請假記錄 | 智能管理系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0f0f23 100%);
+            --secondary-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent-color: #00d4ff;
+            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            --success-color: #00ff88;
+            --warning-color: #ffaa00;
+            --danger-color: #ff4757;
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --card-border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* 動畫背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: var(--card-border);
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .user-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: var(--card-border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .user-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-role {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .leave-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #c44569 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .records-table th,
+        .records-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .records-table th {
+            font-weight: 600;
+            color: var(--accent-color);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .records-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .leave-type-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .password-form {
+            background: var(--secondary-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: none;
+        }
+
+        .alert-success {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #c8e6c9;
+        }
+
+        .alert-danger {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ffcdd2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 1024px) {
+            .user-info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-container {
+                padding: 0 1rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .records-table {
+                font-size: 0.9rem;
+            }
+            
+            .records-table th,
+            .records-table td {
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .leave-stats {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>使用者請假紀錄</h1>
-            <a href="{{ url_for('admin') }}" class="btn btn-primary">返回管理頁面</a>
+    <header class="header">
+        <div class="header-container">
+            <h1 class="header-title">
+                <i class="fas fa-user-circle"></i>
+                {{ user.username }} 的請假記錄
+            </h1>
+            <div class="header-actions">
+                <a href="{{ url_for('admin.admin') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i>
+                    返回管理頁面
+                </a>
+            </div>
         </div>
+    </header>
 
-        <!-- 修改密碼表單 -->
-        <div class="mb-4">
-            <h2>修改密碼</h2>
-            <form action="{{ url_for('update_password', user_id=user.id) }}" method="POST">
-                <div class="form-group">
-                    <label for="new_password">新密碼</label>
-                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+    <div class="container">
+        <div class="user-info-grid">
+            <!-- 用戶信息卡片 -->
+            <div class="card">
+                <div style="text-align: center;">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-name">{{ user.username }}</div>
+                    <div class="user-role">一般用戶</div>
                 </div>
-                <button type="submit" class="btn btn-warning">修改密碼</button>
-            </form>
+                
+                <!-- 修改密碼表單 -->
+                <div class="password-form">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                        <i class="fas fa-key"></i>
+                        修改密碼
+                    </h3>
+                    <form action="{{ url_for('admin.update_password', user_id=user.id) }}" method="POST">
+                        <div class="form-group">
+                            <label for="new_password" class="form-label">新密碼</label>
+                            <input type="password" class="form-input" id="new_password" name="new_password" placeholder="請輸入新密碼" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            <i class="fas fa-save"></i>
+                            更新密碼
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 請假統計卡片 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-pie"></i>
+                    請假天數統計 ({{ current_year }})
+                </h2>
+                <div class="leave-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.vacation_days }}</div>
+                        <div class="stat-label">年假</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.sick_days }}</div>
+                        <div class="stat-label">病假</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.personal_days }}</div>
+                        <div class="stat-label">事假</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.menstrual_days }}</div>
+                        <div class="stat-label">生理假</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.family_care_days }}</div>
+                        <div class="stat-label">家庭照顧假</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.compassionate_days }}</div>
+                        <div class="stat-label">喪假</div>
+                    </div>
+                </div>
+
+                <!-- 年度統計 -->
+                {% if used_annual_leave is defined %}
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem;">
+                        <i class="fas fa-calendar-year"></i>
+                        年度使用統計
+                    </h3>
+                    <div class="leave-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: var(--warning-color);">{{ used_annual_leave or 0 }}</div>
+                            <div class="stat-label">已用年假</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: var(--danger-color);">{{ used_sick_leave or 0 }}</div>
+                            <div class="stat-label">已用病假</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: var(--success-color);">{{ total_leave_days or 0 }}</div>
+                            <div class="stat-label">總請假天數</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- 每年度請假紀錄統計 -->
-        <div class="mb-4">
-            <h2>{{ current_year }} 年度請假紀錄統計</h2>
-            <p>特休: {{ annual_leave_days }} 天</p>
-            <p>病假: {{ sick_leave_days }} 天</p>
-            <p>事假: {{ personal_leave_days }} 天</p>
-            <p>生理假: {{ menstrual_leave_days }} 天</p>
-            <p>家庭照顧假: {{ family_care_leave_days }} 天</p>
-            <p>同情假: {{ compassionate_leave_days }} 天</p>
+        <!-- 請假記錄列表 -->
+        <div class="card">
+            <h2 class="card-title">
+                <i class="fas fa-history"></i>
+                請假記錄
+            </h2>
+            
+            {% if leave_records %}
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>請假類型</th>
+                        <th>開始日期</th>
+                        <th>結束日期</th>
+                        <th>天數</th>
+                        <th>半天</th>
+                        <th>原因</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in leave_records %}
+                    <tr>
+                        <td>
+                            <span class="leave-type-badge">{{ record.leave_type }}</span>
+                        </td>
+                        <td>{{ record.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ record.end_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <strong style="color: var(--accent-color);">{{ record.days }}</strong>
+                        </td>
+                        <td>
+                            {% if record.half_day %}
+                            <i class="fas fa-check" style="color: var(--success-color);"></i>
+                            {% else %}
+                            <i class="fas fa-times" style="color: var(--text-secondary);"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.reason or '-' }}</td>
+                        <td>
+                            <form action="{{ url_for('leave.delete_leave', leave_id=record.id, redirect_to='user_records') }}" method="POST" style="display:inline;" 
+                                  onsubmit="return confirm('確定要刪除這筆請假紀錄嗎？')">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i>
+                                    刪除
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h3>尚無請假記錄</h3>
+                <p>{{ user.username }} 還沒有任何請假記錄</p>
+            </div>
+            {% endif %}
         </div>
-
-        <table class="table table-bordered table-hover">
-            <thead class="thead-light">
-                <tr>
-                    <th>請假類型</th>
-                    <th>開始日期</th>
-                    <th>結束日期</th>
-                    <th>半天</th>
-                    <th>原因</th>
-                    <th>證明</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for record in leave_records %}
-                <tr>
-                    <td>{{ record.leave_type }}</td>
-                    <td>{{ record.start_date }}</td>
-                    <td>{{ record.end_date }}</td>
-                    <td>{{ '是' if record.half_day else '否' }}</td>
-                    <td>{{ record.reason or '無' }}</td>
-                    <td>
-                        {% if record.receipt_url %}
-                        <a href="{{ record.receipt_url }}" 
-                           target="_blank">
-                           查看證明圖片
-                        </a>
-                        {% else %}
-                            無
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form action="{{ url_for('delete_leave', leave_id=record.id, redirect_to='user_records') }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確認刪除此請假紀錄？')">刪除</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="text-center">尚無請假紀錄。</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

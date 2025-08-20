@@ -1,0 +1,41 @@
+        <!-- 最近請假記錄 -->
+        {% if leave_records %}
+        <div class="card recent-records">
+            <h2 class="card-title">
+                <i class="fas fa-clock"></i>
+                最近請假記錄
+            </h2>
+            {% for user_id, records in leave_records.items() %}
+                {% for record in records %}
+                <div class="record-item">
+                    <div class="record-info">
+                        <div class="record-user">
+                            {% for user in users if user.id == user_id %}
+                                {{ user.username }}
+                            {% endfor %}
+                        </div>
+                        <div class="record-details">
+                            {{ record.leave_type }} | {{ record.start_date.strftime('%Y-%m-%d') }} 
+                            {% if record.start_date != record.end_date %}
+                            至 {{ record.end_date.strftime('%Y-%m-%d') }}
+                            {% endif %}
+                            | {{ record.days }} 天
+                            {% if record.reason %}
+                            | {{ record.reason }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="record-actions">
+                        <form action="{{ url_for('leave.delete_leave', leave_id=record.id) }}" method="POST" style="display:inline;" 
+                              onsubmit="return confirm('確定要刪除這筆請假紀錄嗎？')">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i>
+                                刪除
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
