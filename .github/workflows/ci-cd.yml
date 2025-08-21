@@ -84,11 +84,16 @@ jobs:
           echo "📥 拉取最新程式碼..."
           git pull origin main
           
-          echo "📦 重新安裝相依套件..."
-          pip install --no-deps -r requirements.txt || pip install -r requirements.txt
+          echo "📦 檢查依賴變更..."
+          if git diff HEAD~1 HEAD --name-only | grep -q requirements.txt; then
+            echo "📦 依賴已變更，重新安裝..."
+            pip install -r requirements.txt
+          else
+            echo "📦 依賴無變更，跳過安裝"
+          fi
           
           echo "🔄 重啟應用程式..."
-          sudo systemctl restart leave-system || sudo pkill -f "python.*app.py" && nohup python app.py &
+          sudo systemctl restart leave-management.service
           
           echo "⏳ 等待應用程式啟動..."
           sleep 10
