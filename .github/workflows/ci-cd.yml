@@ -79,13 +79,13 @@ jobs:
         chmod 600 deploy_key
         
         # 連接到 EC2 並更新程式碼
-        ssh -i deploy_key -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
+        ssh -i deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 $USER@$HOST << 'EOF'
           cd leave-management-system
           echo "📥 拉取最新程式碼..."
           git pull origin main
           
           echo "📦 重新安裝相依套件..."
-          pip install -r requirements.txt
+          pip install --no-deps -r requirements.txt || pip install -r requirements.txt
           
           echo "🔄 重啟應用程式..."
           sudo systemctl restart leave-system || sudo pkill -f "python.*app.py" && nohup python app.py &
