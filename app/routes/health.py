@@ -4,6 +4,7 @@
 用於監控系統狀態和服務可用性
 """
 
+import os
 import time
 import json
 from datetime import datetime
