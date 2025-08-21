@@ -26,7 +26,7 @@ def health_check():
         health_status = {
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
-            'version': '1.0.1-test',
+            'version': '1.0.2-deploy-test',
             'checks': {
                 'database': 'ok',
                 'application': 'ok'
