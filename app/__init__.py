@@ -46,10 +46,12 @@ def create_app(config_class=Config):
     from .routes.admin import admin_bp
     from .routes.leave import leave_bp
     from .routes.main import main_bp
+    from .routes.health import health_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(leave_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(health_bp)
     
     return app

@@ -1,0 +1,105 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: test_leave_system
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 coverage
+        
+    - name: Run linting
+      run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      
+    - name: Run tests
+      env:
+        DATABASE_URL: mysql+pymysql://root:test_password@localhost:3306/test_leave_system
+        FLASK_ENV: testing
+      run: |
+        echo "🧪 執行應用程式測試..."
+        python test_app.py
+        
+    - name: Generate coverage report
+      run: |
+        echo "📊 產生測試覆蓋率報告..."
+        coverage run --source=app test_app.py
+        coverage report --show-missing
+        echo "✅ 覆蓋率報告完成"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        HOST: ${{ secrets.HOST }}
+        USER: ${{ secrets.USER }}
+      run: |
+        echo "🚀 開始部署到正式環境..."
+        
+        # 設置 SSH key
+        echo "$SSH_PRIVATE_KEY" > deploy_key
+        chmod 600 deploy_key
+        
+        # 連接到 EC2 並更新程式碼
+        ssh -i deploy_key -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
+          cd leave-management-system
+          echo "📥 拉取最新程式碼..."
+          git pull origin main
+          
+          echo "📦 重新安裝相依套件..."
+          pip install -r requirements.txt
+          
+          echo "🔄 重啟應用程式..."
+          sudo systemctl restart leave-system || sudo pkill -f "python.*app.py" && nohup python app.py &
+          
+          echo "⏳ 等待應用程式啟動..."
+          sleep 10
+          
+          echo "🏥 執行健康檢查..."
+          curl -f http://localhost:8000/health || echo "⚠️ 健康檢查失敗"
+          
+          echo "✅ 部署完成！"
+        EOF
+        
+        # 清理 SSH key
+        rm -f deploy_key
+        
+        echo "🎉 部署成功完成！"
